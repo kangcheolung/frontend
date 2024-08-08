@@ -53,9 +53,9 @@ export default function Home() {
             case 2:
                 return 'medium';
             case 3:
-                return 'hard';
+                return 'high';
             case 4:
-                return 'veryHard';
+                return 'veryHigh';
             default:
                 return 'none';
         }
@@ -95,8 +95,8 @@ export default function Home() {
                             </div>
                             <div className={`${styles.crowdness} ${styles[gym.crowdness]}`}>
                                 {gym.crowdness === 'low' ? '쾌적' : gym.crowdness === 'medium' ? '보통' :
-                                    gym.crowdness === 'hard' ? '혼잡' :
-                                        gym.crowdness === 'veryHard' ? '매우혼잡' : '미정'}
+                                    gym.crowdness === 'high' ? '혼잡' :
+                                        gym.crowdness === 'veryHigh' ? '매우혼잡' : '미정'}
                             </div>
                         </div>
                     ))}

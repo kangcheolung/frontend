@@ -9,11 +9,13 @@ export default function CrowdnessInputPage() {
     const [location, setLocation] = useState(null);
     const [selectedGym, setSelectedGym] = useState('');
     const [nearbyGyms, setNearbyGyms] = useState([]);
-    const [crowdness, setCrowdness] = useState('');
+    const [crowdness, setCrowdness] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [canVote, setCanVote] = useState(true);
 
     useEffect(() => {
         getLocation();
+        checkVotingEligibility(); // Check if the user can vote
     }, []);
 
     useEffect(() => {
@@ -62,15 +64,70 @@ export default function CrowdnessInputPage() {
         }
     };
 
+    const checkVotingEligibility = async () => {
+        try {
+            const response = await fetch('http://localhost:8080/api/traffic/can-vote', {
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setCanVote(data);
+            } else if (response.status === 401) {
+                alert('로그인이 필요합니다.');
+                router.push('/login');
+            }
+        } catch (error) {
+            console.error('Error checking voting eligibility:', error);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedGym || !crowdness) {
+        if (!selectedGym || crowdness === null) {
             alert('클라이밍장과 혼잡도를 모두 선택해주세요.');
             return;
         }
-        // TODO: 서버로 데이터 전송 로직 구현
-        console.log(`체육관: ${selectedGym}, 혼잡도: ${crowdness}`);
-        router.push('/thanks');
+
+        if (!canVote) {
+            alert('오늘은 이미 투표하셨습니다. 내일 다시 시도해주세요.');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:8080/api/traffic', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    gymId: selectedGym,
+                    busynessLevel: crowdness
+                }),
+                credentials: 'include'
+            });
+
+            if (response.status === 401) {
+                alert('로그인이 필요합니다.');
+                router.push('/login');
+                return;
+            }
+
+            if (response.status === 403) {
+                alert('오늘은 이미 투표하셨습니다. 내일 다시 시도해주세요.');
+                setCanVote(false);
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('서버 응답 오류');
+            }
+
+            alert('혼잡도 정보가 성공적으로 제출되었습니다.');
+            router.push('/thanks');
+        } catch (error) {
+            console.error('Error submitting traffic data:', error);
+            alert('혼잡도 정보 제출에 실패했습니다. 다시 시도해주세요.');
+        }
     };
 
     if (isLoading) {
@@ -80,7 +137,8 @@ export default function CrowdnessInputPage() {
     return (
         <div className={styles.crowdnessInputPage}>
             <h2>혼잡도 입력</h2>
-            {nearbyGyms.length > 0 ? (
+            {!canVote && <p>오늘은 이미 투표하셨습니다. 내일 다시 시도해주세요.</p>}
+            {canVote && nearbyGyms.length > 0 ? (
                 <form onSubmit={handleSubmit}>
                     <select
                         value={selectedGym}
@@ -97,23 +155,22 @@ export default function CrowdnessInputPage() {
                     </select>
 
                     <div className={styles.crowdnessButtons}>
-                        <button type="button" onClick={() => setCrowdness('low')}
-                                className={`${styles.crowdnessButton} ${styles.low}`}>쾌적
+                        <button type="submit" onClick={() => setCrowdness(1)}
+                                className={`${styles.crowdnessButton} ${crowdness === 1 ? styles.selected : ''} ${styles.low}`}>쾌적
                         </button>
-                        <button type="button" onClick={() => setCrowdness('medium')}
-                                className={`${styles.crowdnessButton} ${styles.medium}`}>보통
+                        <button type="submit" onClick={() => setCrowdness(2)}
+                                className={`${styles.crowdnessButton} ${crowdness === 2 ? styles.selected : ''} ${styles.medium}`}>보통
                         </button>
-                        <button type="button" onClick={() => setCrowdness('high')}
-                                className={`${styles.crowdnessButton} ${styles.high}`}>혼잡
+                        <button type="submit" onClick={() => setCrowdness(3)}
+                                className={`${styles.crowdnessButton} ${crowdness === 3 ? styles.selected : ''} ${styles.high}`}>혼잡
                         </button>
-                        <button type="button" onClick={() => setCrowdness('veryHigh')}
-                                className={`${styles.crowdnessButton} ${styles.veryHigh}`}>매우 혼잡
+                        <button type="submit" onClick={() => setCrowdness(4)}
+                                className={`${styles.crowdnessButton} ${crowdness === 4 ? styles.selected : ''} ${styles.veryHigh}`}>매우 혼잡
                         </button>
                     </div>
-                    <button type="submit" className={styles.submitButton}>제출</button>
                 </form>
             ) : (
-                <p>주변에 클라이밍장이 없습니다.</p>
+                <p>오늘 투표 기회를 모두 사용하셨습니다.</p>
             )}
         </div>
     );
