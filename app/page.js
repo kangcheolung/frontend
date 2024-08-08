@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
 import styles from './page.module.css';
+import {getSession, useSession} from "next-auth/react";
 
 export default function Home() {
     const [searchTerm, setSearchTerm] = useState('');
     const [gyms, setGyms] = useState([]);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const { data: session } = useSession();
 
     useEffect(() => {
         checkLoginStatus();
@@ -30,27 +33,34 @@ export default function Home() {
     };
 
     const fetchGyms = async () => {
-        setGyms([
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '2', name: '클라이밍파크 홍대점', address: '서울 마포구 서교동 456-78', crowdness: 'medium', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc" },
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '2', name: '클라이밍파크 홍대점', address: '서울 마포구 서교동 456-78', crowdness: 'medium', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc" },
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '2', name: '클라이밍파크 홍대점', address: '서울 마포구 서교동 456-78', crowdness: 'medium', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc" },
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '2', name: '클라이밍파크 홍대점', address: '서울 마포구 서교동 456-78', crowdness: 'medium', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc" },
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '2', name: '클라이밍파크 홍대점', address: '서울 마포구 서교동 456-78', crowdness: 'medium', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc" },
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-            { id: '2', name: '클라이밍파크 홍대점', address: '서울 마포구 서교동 456-78', crowdness: 'medium', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc" },
-            { id: '1', name: '더클라이밍 강남점', address: '서울 강남구 역삼동 123-45', crowdness: 'low', logo: "https://spirit-files-bucket.s3.ap-northeast-2.amazonaws.com/z5crszpomynne34sg9c4xlrxuwtc"},
-        ]);
+        await axios.get('http://localhost:8080/api/gyms', {
+            headers: {
+                'JSESSIONID': getSession('JSESSIONID')
+            }
+        })
+            .then(response => {
+                response.data.result.forEach(gym => {
+                    gym.crowdness = convertToCrowdness(gym.crowdness);
+                })
+                setGyms(response.data.result);
+            })
     };
+
+    const convertToCrowdness = (level) => {
+        switch(level) {
+            case 1:
+                return 'low';
+            case 2:
+                return 'medium';
+            case 3:
+                return 'hard';
+            case 4:
+                return 'veryHard';
+            default:
+                return 'none';
+        }
+
+    }
 
     const handleKakaoLogin = () => {
         window.location.href = 'http://localhost:8080/oauth2/authorization/kakao';
@@ -76,7 +86,7 @@ export default function Home() {
             />}
             <div className={styles.gymListContainer}>
                 <div className={`${styles.gymList} ${!isLoggedIn ? styles.blurred : ''}`}>
-                    {gyms.filter(gym => gym.name.toLowerCase().includes(searchTerm.toLowerCase())).map(gym => (
+                        {gyms.filter(gym => gym.name.toLowerCase().includes(searchTerm.toLowerCase())).map(gym => (
                         <div key={gym.id} className={styles.gymItem}>
                             <img src={gym.logo} alt={gym.name} className={styles.gymLogo} />
                             <div className={styles.gymInfo}>
@@ -84,7 +94,9 @@ export default function Home() {
                                 <div className={styles.gymAddress}>{gym.address}</div>
                             </div>
                             <div className={`${styles.crowdness} ${styles[gym.crowdness]}`}>
-                                {gym.crowdness === 'low' ? '쾌적' : gym.crowdness === 'medium' ? '보통' : '혼잡'}
+                                {gym.crowdness === 'low' ? '쾌적' : gym.crowdness === 'medium' ? '보통' :
+                                    gym.crowdness === 'hard' ? '혼잡' :
+                                        gym.crowdness === 'veryHard' ? '매우혼잡' : '미정'}
                             </div>
                         </div>
                     ))}
@@ -102,8 +114,8 @@ export default function Home() {
             </div>
             {isLoggedIn &&
                 <>
-                <Link href="/input" className={styles.crowdnessButton}>혼잡도 입력하기</Link>
-                <button onClick={handleLogout} className={styles.logoutButton}>로그아웃</button>
+                    <Link href="/input" className={styles.crowdnessButton}>혼잡도 입력하기</Link>
+                    <button onClick={handleLogout} className={styles.logoutButton}>로그아웃</button>
                 </>
             }
         </div>

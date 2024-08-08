@@ -8,10 +8,18 @@ export default function CrowdnessInputPage() {
     const router = useRouter();
     const [location, setLocation] = useState(null);
     const [selectedGym, setSelectedGym] = useState('');
+    const [nearbyGyms, setNearbyGyms] = useState([]);
     const [crowdness, setCrowdness] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        getLocation()
+        getLocation();
+    }, []);
+
+    useEffect(() => {
+        if (location) {
+            fetchNearbyGyms();
+        }
     }, [location]);
 
     const getLocation = () => {
@@ -21,14 +29,7 @@ export default function CrowdnessInputPage() {
             return;
         }
 
-        const geo = navigator.geolocation;
-        const options = {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 5000
-        };
-
-        geo.getCurrentPosition(
+        navigator.geolocation.getCurrentPosition(
             (position) => {
                 setLocation({
                     latitude: position.coords.latitude,
@@ -37,58 +38,83 @@ export default function CrowdnessInputPage() {
             },
             (error) => {
                 console.error('위치 정보 획득 실패:', error);
+                setIsLoading(false);
                 if (error.code === 1) {
                     alert('위치 정보 액세스가 거부되었습니다. 브라우저 설정에서 위치 정보 접근을 허용해주세요.');
                 }
-            },
-            options
+            }
         );
+    };
+
+    const fetchNearbyGyms = async () => {
+        try {
+            const response = await fetch(`http://localhost:8080/api/gyms/nearby?latitude=${location.latitude}&longitude=${location.longitude}`);
+            if (!response.ok) {
+                throw new Error('서버 응답 오류');
+            }
+            const data = await response.json();
+            setNearbyGyms(data);
+        } catch (error) {
+            console.error('Error fetching nearby gyms:', error);
+            alert('주변 클라이밍장 정보를 불러오는데 실패했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!location) {
-            alert('위치 정보가 필요합니다. 위치 정보를 허용해주세요.');
+        if (!selectedGym || !crowdness) {
+            alert('클라이밍장과 혼잡도를 모두 선택해주세요.');
             return;
         }
-        console.log(`체육관: ${selectedGym}, 혼잡도: ${crowdness}, 위치: `, location);
-        // 여기에 서버로 데이터를 보내는 로직을 추가할 수 있습니다.
+        // TODO: 서버로 데이터 전송 로직 구현
+        console.log(`체육관: ${selectedGym}, 혼잡도: ${crowdness}`);
         router.push('/thanks');
     };
+
+    if (isLoading) {
+        return <div>위치 정보를 불러오는 중...</div>;
+    }
 
     return (
         <div className={styles.crowdnessInputPage}>
             <h2>혼잡도 입력</h2>
-            {!location ? <p>위치 정보를 불러오는 중</p> :
-                <><p>근처 1KM 클라이밍장 목록</p>
-                    <form onSubmit={handleSubmit}>
-                        <select
-                            value={selectedGym}
-                            onChange={(e) => setSelectedGym(e.target.value)}
-                            required
-                            className={styles.gymSelect}
-                        >
-                            <option value="">클라이밍장 선택</option>
-                            <option value="1">더클라이밍 강남점</option>
-                            <option value="2">클라이밍파크 홍대점</option>
-                        </select>
+            {nearbyGyms.length > 0 ? (
+                <form onSubmit={handleSubmit}>
+                    <select
+                        value={selectedGym}
+                        onChange={(e) => setSelectedGym(e.target.value)}
+                        required
+                        className={styles.gymSelect}
+                    >
+                        <option value="">클라이밍장 선택</option>
+                        {nearbyGyms.map(gym => (
+                            <option key={gym.id} value={gym.id}>
+                                {gym.name} ({gym.distance.toFixed(2)} km)
+                            </option>
+                        ))}
+                    </select>
 
-                        <div className={styles.crowdnessButtons}>
-                            <button type="submit" onClick={() => setCrowdness('low')}
-                                    className={`${styles.crowdnessButton} ${styles.low}`}>쾌적
-                            </button>
-                            <button type="submit" onClick={() => setCrowdness('medium')}
-                                    className={`${styles.crowdnessButton} ${styles.medium}`}>보통
-                            </button>
-                            <button type="submit" onClick={() => setCrowdness('high')}
-                                    className={`${styles.crowdnessButton} ${styles.high}`}>혼잡
-                            </button>
-                            <button type="submit" onClick={() => setCrowdness('veryHigh')}
-                                    className={`${styles.crowdnessButton} ${styles.veryHigh}`}>매우 혼잡
-                            </button>
-                        </div>
-                    </form>
-                </>}
+                    <div className={styles.crowdnessButtons}>
+                        <button type="button" onClick={() => setCrowdness('low')}
+                                className={`${styles.crowdnessButton} ${styles.low}`}>쾌적
+                        </button>
+                        <button type="button" onClick={() => setCrowdness('medium')}
+                                className={`${styles.crowdnessButton} ${styles.medium}`}>보통
+                        </button>
+                        <button type="button" onClick={() => setCrowdness('high')}
+                                className={`${styles.crowdnessButton} ${styles.high}`}>혼잡
+                        </button>
+                        <button type="button" onClick={() => setCrowdness('veryHigh')}
+                                className={`${styles.crowdnessButton} ${styles.veryHigh}`}>매우 혼잡
+                        </button>
+                    </div>
+                    <button type="submit" className={styles.submitButton}>제출</button>
+                </form>
+            ) : (
+                <p>주변에 클라이밍장이 없습니다.</p>
+            )}
         </div>
     );
 }
