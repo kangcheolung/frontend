@@ -1,0 +1,75 @@
+.crowdnessInputPage {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    margin-top: 200px;
+}
+
+.crowdnessInputPage h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.crowdnessInputPage p {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+
+.gymSelect {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border: 1px solid #e5e8eb;
+}
+
+.crowdnessButtons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.crowdnessButton {
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.crowdnessButton:hover {
+    opacity: 0.8;
+}
+
+.low { background-color: #e8f5e9; color: #2e7d32; }
+.medium { background-color: #fff3e0; color: #f57c00; }
+.high { background-color: #ffebee; color: #c62828; }
+.veryHigh { background-color: #f3e5f5; color: #6a1b9a; }
+
+.submitButton {
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    background-color: #3182f6;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submitButton:hover {
+    background-color: #2160c4;
+}
