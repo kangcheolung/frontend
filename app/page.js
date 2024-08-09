@@ -8,6 +8,7 @@ import {getSession, useSession} from "next-auth/react";
 
 export default function Home() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [brands, setBrands] = useState([]);
     const [gyms, setGyms] = useState([]);
     const [filteredGyms, setFilteredGyms] = useState([]);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -17,6 +18,7 @@ export default function Home() {
 
     useEffect(() => {
         checkLoginStatus();
+        fetchBrands();
         fetchGyms();
         checkVotingEligibility();
     }, []);
@@ -40,6 +42,19 @@ export default function Home() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const fetchBrands = async () => {
+        try {
+            const response = await axios.get('http://localhost:8080/api/brands');
+            setBrands(response.data);
+        } catch (error) {
+            console.error('Error fetching brands:', error);
+        }
+    };
+
+    const handleGymButtonClick = (searchTerm) => {
+        setSearchTerm(searchTerm);
     };
 
     const fetchGyms = async () => {
@@ -102,19 +117,43 @@ export default function Home() {
 
     return (
         <div className={`${isLoggedIn ? styles.container : styles.ncontainer}`}>
-            {isLoggedIn && <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="클라이밍장 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />}
+            {isLoggedIn && (
+                <>
+                    <input
+                        type="text"
+                        className={styles.searchInput}
+                        placeholder="클라이밍장 검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <div className={styles.gymButtonScrollContainer}>
+                        <div className={styles.gymButtonContainer}>
+                            <button
+                                className={styles.gymButton}
+                                onClick={() => handleGymButtonClick('')}
+                            >
+                                <span>전체</span>
+                            </button>
+                            {brands.map((brand, index) => (
+                                <button
+                                    key={index}
+                                    className={styles.gymButton}
+                                    onClick={() => handleGymButtonClick(brand.searchTerm)}
+                                >
+                                    <img src={brand.imageUrl} alt={brand.name} className={styles.gymButtonIcon}/>
+                                    <span>{brand.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            )}
             <div className={styles.gymListContainer}>
                 <div className={`${styles.gymList} ${!isLoggedIn ? styles.blurred : ''}`}>
                     {filteredGyms.length > 0 ? (
                         filteredGyms.map(gym => (
                             <div key={gym.id} className={styles.gymItem}>
-                                <img src={gym.logo} alt={gym.name} className={styles.gymLogo} />
+                                <img src={gym.logo} alt={gym.name} className={styles.gymLogo}/>
                                 <div className={styles.gymInfo}>
                                     <div className={styles.gymName}>{gym.name}</div>
                                     <div className={styles.gymAddress}>{gym.address}</div>
@@ -127,7 +166,7 @@ export default function Home() {
                             </div>
                         ))
                     ) : (
-                        <div className={styles.noResults}>Searching...</div>
+                        <div className={styles.noResults}>검색 중...</div>
                     )}
                 </div>
                 {!isLoggedIn && (

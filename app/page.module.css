@@ -23,8 +23,55 @@
   font-size: 16px;
   border: 1px solid #e5e8eb;
   border-radius: 8px;
-  margin-bottom: 24px;
   box-sizing: border-box;
+}
+
+.gymButtonScrollContainer {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* iOS에서 부드러운 스크롤 지원 */
+}
+
+.gymButtonContainer {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.gymButton {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gymButton:hover {
+  background-color: #e0e0e0;
+}
+
+.gymButtonIcon {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.gymButtonScrollContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.gymButtonScrollContainer {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .gymListContainer {
@@ -37,9 +84,9 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   padding: 8px;
   margin-bottom: 24px;
-  height: calc(100vh - 250px); /* 높이를 고정 */
+  height: calc(100vh - 300px);
   overflow-y: auto;
-  min-height: 200px; /* 최소 높이 설정 */
+  min-height: 200px;
 }
 
 .noResults {
