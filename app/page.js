@@ -9,6 +9,7 @@ import {getSession, useSession} from "next-auth/react";
 export default function Home() {
     const [searchTerm, setSearchTerm] = useState('');
     const [gyms, setGyms] = useState([]);
+    const [filteredGyms, setFilteredGyms] = useState([]);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const { data: session } = useSession();
@@ -19,6 +20,13 @@ export default function Home() {
         fetchGyms();
         checkVotingEligibility();
     }, []);
+
+    useEffect(() => {
+        const filtered = gyms.filter(gym =>
+            gym.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredGyms(filtered);
+    }, [searchTerm, gyms]);
 
     const checkLoginStatus = async () => {
         try {
@@ -79,7 +87,6 @@ export default function Home() {
         }
 
     }
-
     const handleKakaoLogin = () => {
         window.location.href = 'http://localhost:8080/oauth2/authorization/kakao';
     };
@@ -104,20 +111,24 @@ export default function Home() {
             />}
             <div className={styles.gymListContainer}>
                 <div className={`${styles.gymList} ${!isLoggedIn ? styles.blurred : ''}`}>
-                        {gyms.filter(gym => gym.name.toLowerCase().includes(searchTerm.toLowerCase())).map(gym => (
-                        <div key={gym.id} className={styles.gymItem}>
-                            <img src={gym.logo} alt={gym.name} className={styles.gymLogo} />
-                            <div className={styles.gymInfo}>
-                                <div className={styles.gymName}>{gym.name}</div>
-                                <div className={styles.gymAddress}>{gym.address}</div>
+                    {filteredGyms.length > 0 ? (
+                        filteredGyms.map(gym => (
+                            <div key={gym.id} className={styles.gymItem}>
+                                <img src={gym.logo} alt={gym.name} className={styles.gymLogo} />
+                                <div className={styles.gymInfo}>
+                                    <div className={styles.gymName}>{gym.name}</div>
+                                    <div className={styles.gymAddress}>{gym.address}</div>
+                                </div>
+                                <div className={`${styles.crowdness} ${styles[gym.crowdness]}`}>
+                                    {gym.crowdness === 'low' ? '쾌적' : gym.crowdness === 'medium' ? '보통' :
+                                        gym.crowdness === 'high' ? '혼잡' :
+                                            gym.crowdness === 'veryHigh' ? '매우혼잡' : '미정'}
+                                </div>
                             </div>
-                            <div className={`${styles.crowdness} ${styles[gym.crowdness]}`}>
-                                {gym.crowdness === 'low' ? '쾌적' : gym.crowdness === 'medium' ? '보통' :
-                                    gym.crowdness === 'high' ? '혼잡' :
-                                        gym.crowdness === 'veryHigh' ? '매우혼잡' : '미정'}
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className={styles.noResults}>Searching...</div>
+                    )}
                 </div>
                 {!isLoggedIn && (
                     <div className={styles.loginOverlay}>
