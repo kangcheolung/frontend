@@ -15,7 +15,7 @@ export default function CrowdnessInputPage() {
 
     useEffect(() => {
         getLocation();
-        checkVotingEligibility(); // Check if the user can vote
+        checkVotingEligibility();
     }, []);
 
     useEffect(() => {
@@ -73,8 +73,7 @@ export default function CrowdnessInputPage() {
                 const data = await response.json();
                 setCanVote(data);
             } else if (response.status === 401) {
-                alert('로그인이 필요합니다.');
-                router.push('/login');
+                router.push('/');
             }
         } catch (error) {
             console.error('Error checking voting eligibility:', error);
@@ -107,8 +106,7 @@ export default function CrowdnessInputPage() {
             });
 
             if (response.status === 401) {
-                alert('로그인이 필요합니다.');
-                router.push('/login');
+                router.push('/');
                 return;
             }
 
@@ -169,8 +167,9 @@ export default function CrowdnessInputPage() {
                         </button>
                     </div>
                 </form>
+
             ) : (
-                <p>오늘 투표 기회를 모두 사용하셨습니다.</p>
+                canVote && <p>근처에 클라이밍 센터가 없습니다.</p>
             )}
         </div>
     );

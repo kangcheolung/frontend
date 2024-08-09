@@ -12,10 +12,12 @@ export default function Home() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const { data: session } = useSession();
+    const [canVote, setCanVote] = useState(true);
 
     useEffect(() => {
         checkLoginStatus();
         fetchGyms();
+        checkVotingEligibility();
     }, []);
 
     const checkLoginStatus = async () => {
@@ -44,6 +46,22 @@ export default function Home() {
                 })
                 setGyms(response.data.result);
             })
+    };
+
+    const checkVotingEligibility = async () => {
+        try {
+            const response = await fetch('http://localhost:8080/api/traffic/can-vote', {
+                credentials: 'include'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setCanVote(data);
+            } else if (response.status === 401) {
+                router.push('/');
+            }
+        } catch (error) {
+            console.error('Error checking voting eligibility:', error);
+        }
     };
 
     const convertToCrowdness = (level) => {
@@ -114,7 +132,11 @@ export default function Home() {
             </div>
             {isLoggedIn &&
                 <>
-                    <Link href="/input" className={styles.crowdnessButton}>혼잡도 입력하기</Link>
+                    {canVote ? (
+                        <Link href="/input" className={styles.crowdnessButton}>혼잡도 입력하기</Link>
+                    ) : (
+                        <p className={styles.cantVoteButton}>오늘은 이미 투표하셨습니다 :)</p>
+                    )}
                     <button onClick={handleLogout} className={styles.logoutButton}>로그아웃</button>
                 </>
             }
