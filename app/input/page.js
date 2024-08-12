@@ -50,7 +50,7 @@ export default function CrowdnessInputPage() {
 
     const fetchNearbyGyms = async () => {
         try {
-            const response = await fetch(`http://localhost:8080/api/gyms/nearby?latitude=${location.latitude}&longitude=${location.longitude}`);
+            const response = await fetch(`${process.env.SERVER_URL}/api/gyms/nearby?latitude=${location.latitude}&longitude=${location.longitude}`);
             if (!response.ok) {
                 throw new Error('서버 응답 오류');
             }
@@ -66,7 +66,7 @@ export default function CrowdnessInputPage() {
 
     const checkVotingEligibility = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/traffic/can-vote', {
+            const response = await fetch(`${process.env.SERVER_URL}/api/traffic/can-vote`, {
                 credentials: 'include'
             });
             if (response.ok) {
@@ -93,7 +93,7 @@ export default function CrowdnessInputPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/traffic', {
+            const response = await fetch(`${process.env.SERVER_URL}/api/traffic`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -32,7 +32,7 @@ export default function Home() {
 
     const checkLoginStatus = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/auth/session', {
+            const response = await fetch(`${process.env.SERVER_URL}/api/auth/session`, {
                 credentials: 'include'
             });
             const data = await response.json();
@@ -46,7 +46,7 @@ export default function Home() {
 
     const fetchBrands = async () => {
         try {
-            const response = await axios.get('http://localhost:8080/api/brands');
+            const response = await axios.get(`${process.env.SERVER_URL}/api/brands`);
             setBrands(response.data);
         } catch (error) {
             console.error('Error fetching brands:', error);
@@ -58,7 +58,7 @@ export default function Home() {
     };
 
     const fetchGyms = async () => {
-        await axios.get('http://localhost:8080/api/gyms', {
+        await axios.get(`${process.env.SERVER_URL}/api/gyms`, {
             headers: {
                 'JSESSIONID': getSession('JSESSIONID')
             }
@@ -73,7 +73,7 @@ export default function Home() {
 
     const checkVotingEligibility = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/traffic/can-vote', {
+            const response = await fetch(`${process.env.SERVER_URL}/api/traffic/can-vote`, {
                 credentials: 'include'
             });
             if (response.ok) {
@@ -103,12 +103,12 @@ export default function Home() {
 
     }
     const handleKakaoLogin = () => {
-        window.location.href = 'http://localhost:8080/oauth2/authorization/kakao';
+        window.location.href = `${process.env.SERVER_URL}/oauth2/authorization/kakao`;
     };
 
     const handleLogout = () => {
         setIsLoggedIn(false);
-        window.location.href = 'http://localhost:8080/logout';
+        window.location.href = `${process.env.SERVER_URL}/logout`;
     }
 
     if (isLoading) {
@@ -187,7 +187,7 @@ export default function Home() {
                     ) : (
                         <p className={styles.cantVoteButton}>오늘은 이미 투표하셨습니다 :)</p>
                     )}
-                    <button onClick={handleLogout} className={styles.logoutButton}>로그아웃</button>
+                    {/*<button onClick={handleLogout} className={styles.logoutButton}>로그아웃</button>*/}
                 </>
             }
         </div>
