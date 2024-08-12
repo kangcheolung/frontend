@@ -12,6 +12,7 @@ export default function CrowdnessInputPage() {
     const [crowdness, setCrowdness] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [canVote, setCanVote] = useState(true);
+    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL;
 
     useEffect(() => {
         getLocation();
@@ -50,7 +51,7 @@ export default function CrowdnessInputPage() {
 
     const fetchNearbyGyms = async () => {
         try {
-            const response = await fetch(`${process.env.SERVER_URL}/api/gyms/nearby?latitude=${location.latitude}&longitude=${location.longitude}`);
+            const response = await fetch(`${serverUrl}/api/gyms/nearby?latitude=${location.latitude}&longitude=${location.longitude}`);
             if (!response.ok) {
                 throw new Error('서버 응답 오류');
             }
@@ -66,7 +67,7 @@ export default function CrowdnessInputPage() {
 
     const checkVotingEligibility = async () => {
         try {
-            const response = await fetch(`${process.env.SERVER_URL}/api/traffic/can-vote`, {
+            const response = await fetch(`${serverUrl}/api/traffic/can-vote`, {
                 credentials: 'include'
             });
             if (response.ok) {
@@ -93,7 +94,7 @@ export default function CrowdnessInputPage() {
         }
 
         try {
-            const response = await fetch(`${process.env.SERVER_URL}/api/traffic`, {
+            const response = await fetch(`${serverUrl}/api/traffic`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

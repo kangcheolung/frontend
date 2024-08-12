@@ -15,6 +15,7 @@ export default function Home() {
     const [isLoading, setIsLoading] = useState(true);
     const { data: session } = useSession();
     const [canVote, setCanVote] = useState(true);
+    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL;
 
     useEffect(() => {
         checkLoginStatus();
@@ -32,7 +33,7 @@ export default function Home() {
 
     const checkLoginStatus = async () => {
         try {
-            const response = await fetch(`${process.env.SERVER_URL}/api/auth/session`, {
+            const response = await fetch(`${serverUrl}/api/auth/session`, {
                 credentials: 'include'
             });
             const data = await response.json();
@@ -46,7 +47,7 @@ export default function Home() {
 
     const fetchBrands = async () => {
         try {
-            const response = await axios.get(`${process.env.SERVER_URL}/api/brands`);
+            const response = await axios.get(`${serverUrl}/api/brands`);
             setBrands(response.data);
         } catch (error) {
             console.error('Error fetching brands:', error);
@@ -58,7 +59,7 @@ export default function Home() {
     };
 
     const fetchGyms = async () => {
-        await axios.get(`${process.env.SERVER_URL}/api/gyms`, {
+        await axios.get(`${serverUrl}/api/gyms`, {
             headers: {
                 'JSESSIONID': getSession('JSESSIONID')
             }
@@ -73,7 +74,7 @@ export default function Home() {
 
     const checkVotingEligibility = async () => {
         try {
-            const response = await fetch(`${process.env.SERVER_URL}/api/traffic/can-vote`, {
+            const response = await fetch(`${serverUrl}/api/traffic/can-vote`, {
                 credentials: 'include'
             });
             if (response.ok) {
@@ -103,12 +104,12 @@ export default function Home() {
 
     }
     const handleKakaoLogin = () => {
-        window.location.href = `${process.env.SERVER_URL}/oauth2/authorization/kakao`;
+        window.location.href = `${serverUrl}/oauth2/authorization/kakao`;
     };
 
     const handleLogout = () => {
         setIsLoggedIn(false);
-        window.location.href = `${process.env.SERVER_URL}/logout`;
+        window.location.href = `${serverUrl}/logout`;
     }
 
     if (isLoading) {
