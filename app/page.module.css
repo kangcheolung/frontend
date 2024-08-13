@@ -53,6 +53,10 @@
   flex-shrink: 0;
 }
 
+.gymButton span {
+  color: black;
+}
+
 .gymButton:hover {
   background-color: #e0e0e0;
 }

@@ -121,7 +121,6 @@ export default function CrowdnessInputPage() {
                 throw new Error('서버 응답 오류');
             }
 
-            alert('혼잡도 정보가 성공적으로 제출되었습니다.');
             router.push('/thanks');
         } catch (error) {
             console.error('Error submitting traffic data:', error);
@@ -130,7 +129,7 @@ export default function CrowdnessInputPage() {
     };
 
     if (isLoading) {
-        return <div>위치 정보를 불러오는 중...</div>;
+        return <div style={{textAlign: "center", marginTop: 250}}>위치 정보를 불러오는 중...</div>;
     }
 
     return (

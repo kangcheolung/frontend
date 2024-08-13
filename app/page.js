@@ -113,7 +113,7 @@ export default function Home() {
     }
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <div style={{ textAlign: "center", marginTop: 250 }}>정보 불러오는 중...</div>;
     }
 
     return (
