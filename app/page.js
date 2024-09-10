@@ -37,6 +37,7 @@ export default function Home() {
 
     const handleKakaoLogin = () => {
         window.location.href = `${serverUrl}/oauth2/authorization/kakao`;
+
     };
 
     const handleLogout = () => {
