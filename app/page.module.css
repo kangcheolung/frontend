@@ -1,215 +1,61 @@
 .container {
-  max-width: 500px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  box-sizing: border-box;
+  font-family: Arial, sans-serif;
 }
 
-.ncontainer {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 20px;
-  box-sizing: border-box;
-  margin-top: 80px;
-}
-
-.notLoggedIn {
-  margin-top: 200px;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 14px 16px;
-  font-size: 16px;
-  border: 1px solid #e5e8eb;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-
-.gymButtonScrollContainer {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* iOS에서 부드러운 스크롤 지원 */
-}
-
-.gymButtonContainer {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 10px;
-  padding: 10px 0;
-}
-
-.gymButton {
-  display: flex;
-  align-items: center;
-  font-weight: bold;
-  background-color: #f0f0f0;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.gymButton span {
-  color: black;
-}
-
-.gymButton:hover {
-  background-color: #e0e0e0;
-}
-
-.gymButtonIcon {
-  width: 24px;
-  height: 24px;
-  margin-right: 8px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.gymButtonScrollContainer::-webkit-scrollbar {
-  display: none;
-}
-
-.gymButtonScrollContainer {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.gymListContainer {
-  position: relative;
-}
-
-.gymList {
-  background-color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  padding: 8px;
-  margin-bottom: 24px;
-  height: calc(100vh - 300px);
-  overflow-y: auto;
-  min-height: 200px;
-}
-
-.noResults {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  font-size: 18px;
-  color: #8b95a1;
-}
-
-.blurred {
-  filter: blur(5px);
-  pointer-events: none;
-  user-select: none;
-}
-
-.gymItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px;
-  border-bottom: 1px solid #e5e8eb;
-}
-
-.gymItem:last-child {
-  border-bottom: none;
-}
-
-.gymLogo {
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  margin-right: 12px;
-}
-
-.gymInfo {
-  flex-grow: 1;
-}
-
-.gymName {
-  font-weight: 600;
-  font-size: 18px;
-  margin-bottom: 4px;
-}
-
-.gymAddress {
-  color: #8b95a1;
-  font-size: 14px;
-}
-
-.crowdness {
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 16px;
-  white-space: nowrap;
-}
-
-.none { background-color: #e5e8eb; color: #011111; }
-.low { background-color: #e8f5e9; color: #2e7d32; }
-.medium { background-color: #fff3e0; color: #f57c00; }
-.high { background-color: #ffebee; color: #c62828; }
-.veryHigh { background-color: #f3e5f5; color: #6a1b9a; }
-
-.loginOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(255, 255, 255, 0.7);
-}
-
-.loginBox {
+.header {
   text-align: center;
-  padding: 20px;
-  background-color: white;
+  margin-bottom: 40px;
+}
+
+.title {
+  color: #333;
+  font-size: 2.5em;
+}
+
+.main {
+  background-color: #f5f5f5;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.loader {
+  text-align: center;
+  font-size: 1.2em;
+  color: #666;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.welcomeMessage, .loginMessage {
+  font-size: 1.2em;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.kakaoLoginButton, .logoutButton {
+  padding: 10px 20px;
+  font-size: 1em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .kakaoLoginButton {
   background-color: #FEE500;
-  color: #000000;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
+  color: #000;
 }
 
-.loginBox p {
-  font-size: 15px;
-  font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.actionButtons {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
-.crowdnessButton, .logoutButton {
-  flex: 1;
-  padding: 14px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  text-align: center;
-  text-decoration: none;
+.kakaoLoginButton:hover {
+  background-color: #FAD000;
 }
 
 .logoutButton {
@@ -217,38 +63,13 @@
   color: white;
 }
 
-
-.crowdnessButton {
-  display: block;
-  width: 100%;
-  background-color: #3182f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 14px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  text-align: center;
-  text-decoration: none;
-  box-sizing: border-box;
+.logoutButton:hover {
+  background-color: #d32f2f;
 }
 
-.cantVoteButton {
-  display: block;
-  width: 100%;
-  background-color: #C7C8CC;
-  color: #F5F7F8;
-  border: none;
-  border-radius: 8px;
-  padding: 14px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.footer {
+  margin-top: 40px;
   text-align: center;
-  text-decoration: none;
-  box-sizing: border-box;
-  pointer-events: none;
+  color: #666;
+  font-size: 0.9em;
 }

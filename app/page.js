@@ -1,20 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import axios from 'axios';
-import styles from './page.module.css';
 import { useSession } from "next-auth/react";
+import styles from './page.module.css';
 
 export default function Home() {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [brands, setBrands] = useState([]);
-    const [gyms, setGyms] = useState([]);
-    const [filteredGyms, setFilteredGyms] = useState([]);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const { data: session } = useSession();
-    const [canVote, setCanVote] = useState(true);
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
     useEffect(() => {
@@ -37,7 +30,6 @@ export default function Home() {
 
     const handleKakaoLogin = () => {
         window.location.href = `${serverUrl}/oauth2/authorization/kakao`;
-
     };
 
     const handleLogout = () => {
@@ -46,17 +38,36 @@ export default function Home() {
     };
 
     return (
-        <div>
-            {isLoading ? (
-                <p>Loading...</p>
-            ) : isLoggedIn ? (
-                <button onClick={handleLogout}>로그아웃</button>
-            ) : (
-                <button onClick={handleKakaoLogin} className={styles.kakaoLoginButton}>
-                    카카오 로그인
-                </button>
-            )}
-            {/* 여기에 나머지 컴포넌트 내용을 추가하세요 */}
+        <div className={styles.container}>
+            <header className={styles.header}>
+                <h1 className={styles.title}>Welcome to Our App</h1>
+            </header>
+            <main className={styles.main}>
+                {isLoading ? (
+                    <div className={styles.loader}>Loading...</div>
+                ) : (
+                    <div className={styles.content}>
+                        {isLoggedIn ? (
+                            <>
+                                <p className={styles.welcomeMessage}>Welcome back!</p>
+                                <button onClick={handleLogout} className={styles.logoutButton}>
+                                    Log out
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <p className={styles.loginMessage}>Please log in to continue</p>
+                                <button onClick={handleKakaoLogin} className={styles.kakaoLoginButton}>
+                                    Login with Kakao
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+            </main>
+            <footer className={styles.footer}>
+                <p>&copy; 2024 Our App. All rights reserved.</p>
+            </footer>
         </div>
     );
 }
