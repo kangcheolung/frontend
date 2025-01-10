@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
-import styles from './page.module.css';
+
 
 export default function Home() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -38,26 +38,34 @@ export default function Home() {
     };
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1 className={styles.title}>Welcome to Our App</h1>
+        <div className="min-h-screen flex flex-col bg-gray-100">
+            <header className="bg-white shadow-sm">
+                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                    <h1 className="text-3xl font-bold text-gray-900">Welcome to Our App</h1>
+                </div>
             </header>
-            <main className={styles.main}>
+            <main className="flex-grow flex items-center justify-center">
                 {isLoading ? (
-                    <div className={styles.loader}>Loading...</div>
+                    <div className="text-2xl text-gray-600">Loading...</div>
                 ) : (
-                    <div className={styles.content}>
+                    <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
                         {isLoggedIn ? (
                             <>
-                                <p className={styles.welcomeMessage}>Welcome back!</p>
-                                <button onClick={handleLogout} className={styles.logoutButton}>
+                                <p className="text-xl text-gray-700 mb-4">Welcome back!</p>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200"
+                                >
                                     Log out
                                 </button>
                             </>
                         ) : (
                             <>
-                                <p className={styles.loginMessage}>Please log in to continue</p>
-                                <button onClick={handleKakaoLogin} className={styles.kakaoLoginButton}>
+                                <p className="text-xl text-gray-700 mb-4">Please log in to continue</p>
+                                <button
+                                    onClick={handleKakaoLogin}
+                                    className="w-full bg-yellow-400 text-gray-900 py-2 px-4 rounded hover:bg-yellow-500 transition duration-200"
+                                >
                                     Login with Kakao
                                 </button>
                             </>
@@ -65,8 +73,10 @@ export default function Home() {
                     </div>
                 )}
             </main>
-            <footer className={styles.footer}>
-                <p>&copy; 2024 Our App. All rights reserved.</p>
+            <footer className="bg-gray-800 text-white py-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <p>&copy; 2024 Our App. All rights reserved.</p>
+                </div>
             </footer>
         </div>
     );
