@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from "next-auth/react";
-
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const { data: session } = useSession();
+    const router = useRouter();
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
     useEffect(() => {
@@ -37,6 +36,10 @@ export default function Home() {
         window.location.href = `${serverUrl}/logout`;
     };
 
+    const handleUnivCert = () => {
+        router.push('/university-certification');
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-100">
             <header className="bg-white shadow-sm">
@@ -52,6 +55,12 @@ export default function Home() {
                         {isLoggedIn ? (
                             <>
                                 <p className="text-xl text-gray-700 mb-4">Welcome back!</p>
+                                <button
+                                    onClick={handleUnivCert}
+                                    className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200 mb-4"
+                                >
+                                    University Certification
+                                </button>
                                 <button
                                     onClick={handleLogout}
                                     className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200"
