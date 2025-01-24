@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 export default function UniversityCertification() {
     const [email, setEmail] = useState('');
     const [univName, setUnivName] = useState('');
+    const [verificationCode, setVerificationCode] = useState('');
     const [step, setStep] = useState('initial');
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -28,35 +29,73 @@ export default function UniversityCertification() {
                     'Accept': 'application/json',
                 },
                 credentials: 'include',
-                body: JSON.stringify({ email, univName }),
+                body: JSON.stringify({ email, univName, univ_check: true }),
             });
 
             const data = await response.json();
-            console.log('서버 응답:', data);
+            console.log('Server response:', data);
 
-            if (response.ok && data.code === 200) {
-                setStep('verified');
-                setMessage('인증되었습니다!');
+            if (response.ok) {
+                if (data.success) {
+                    setStep('emailSent');
+                    setMessage('인증 이메일이 발송되었습니다. 메일함을 확인해주세요. (스팸 메일함도 확인해주세요.)');
+                } else {
+                    setMessage(data.message || '인증 이메일 발송에 실패했습니다.');
+                }
             } else {
-                setMessage(data.message || '인증에 실패했습니다.');
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
             }
         } catch (error) {
-            console.error('오류:', error);
-            setMessage('이메일과 대학 이름을 정확히 입력해주세요.');
+            console.error('Error:', error);
+            setMessage(`학교명과 이메일을 확인해주세요.`);
         } finally {
             setIsLoading(false);
         }
     };
+    const handleVerifyCode = async () => {
+        if (!verificationCode) {
+            setMessage('인증 코드를 입력해주세요.');
+            return;
+        }
 
-    const handleGoHome = () => {
-        router.push('/');  // 홈 페이지 경로로 수정해주세요
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${serverUrl}/api/auth/university/verify-code`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ email, univName, code: verificationCode }),
+            });
+
+            const data = await response.json();
+            console.log('Server response:', data);
+
+            if (response.ok) {
+                if (data.success) {
+                    setStep('verified');
+                    setMessage(`인증이 완료되었습니다! 인증된 이메일: ${data.certified_email}`);
+                } else {
+                    setMessage(data.message || '인증 코드 확인에 실패했습니다.');
+                }
+            } else {
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            setMessage(`오류가 발생했습니다: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-100">
             <header className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-                    <h1 className="text-3xl font-bold text-gray-900">대학 인증</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">University Certification</h1>
                 </div>
             </header>
             <main className="flex-grow flex items-center justify-center">
@@ -65,14 +104,14 @@ export default function UniversityCertification() {
                         <>
                             <input
                                 type="email"
-                                placeholder="대학 이메일"
+                                placeholder="University Email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full p-2 mb-4 border rounded"
                             />
                             <input
                                 type="text"
-                                placeholder="대학교 이름"
+                                placeholder="University Name"
                                 value={univName}
                                 onChange={(e) => setUnivName(e.target.value)}
                                 className="w-full p-2 mb-4 border rounded"
@@ -82,25 +121,32 @@ export default function UniversityCertification() {
                                 disabled={isLoading}
                                 className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200 disabled:bg-blue-300"
                             >
-                                {isLoading ? '인증 중...' : '인증'}
+                                {isLoading ? 'Sending...' : 'Send Verification Email'}
+                            </button>
+                        </>
+                    )}
+                    {step === 'emailSent' && (
+                        <>
+                            <input
+                                type="text"
+                                placeholder="Verification Code"
+                                value={verificationCode}
+                                onChange={(e) => setVerificationCode(e.target.value)}
+                                className="w-full p-2 mb-4 border rounded"
+                            />
+                            <button
+                                onClick={handleVerifyCode}
+                                disabled={isLoading}
+                                className="w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-200 disabled:bg-green-300"
+                            >
+                                {isLoading ? 'Verifying...' : 'Verify Code'}
                             </button>
                         </>
                     )}
                     {step === 'verified' && (
-                        <>
-                            <p className="text-xl text-green-600 mb-4">인증되었습니다!</p>
-                            <button
-                                onClick={handleGoHome}
-                                className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
-                            >
-                                홈으로 돌아가기
-                            </button>
-                        </>
+                        <p className="text-xl text-green-600">Your university email has been verified!</p>
                     )}
                     {message && <p className="mt-4 text-red-500">{message}</p>}
-
-
-
                 </div>
             </main>
         </div>
