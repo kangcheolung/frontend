@@ -48,6 +48,7 @@ export default function UniversityCertification() {
         } catch (error) {
             console.error('Error:', error);
             setMessage(`학교명과 이메일을 확인해주세요.`);
+
         } finally {
             setIsLoading(false);
         }
