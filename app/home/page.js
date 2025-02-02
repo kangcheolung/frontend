@@ -76,6 +76,7 @@ export default function HomePage() {
                 </div>
 
             </footer>
+
         </div>
     );
 }
