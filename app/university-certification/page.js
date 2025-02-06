@@ -77,7 +77,11 @@ export default function UniversityCertification() {
             if (response.ok) {
                 if (data.success) {
                     setStep('verified');
-                    setMessage(`인증이 완료되었습니다! 인증된 이메일: ${data.certified_email}`);
+                    setMessage('인증이 완료되었습니다!');
+                    // 잠시 대기 후 전공 선택 페이지로 이동
+                    setTimeout(() => {
+                        router.push('/major-selection');
+                    }, 1500);
                 } else {
                     setMessage(data.message || '인증 코드 확인에 실패했습니다.');
                 }
@@ -96,7 +100,7 @@ export default function UniversityCertification() {
         <div className="min-h-screen flex flex-col bg-gray-100">
             <header className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-                    <h1 className="text-3xl font-bold text-gray-900">University Certification</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">대학교 인증</h1>
                 </div>
             </header>
             <main className="flex-grow flex items-center justify-center">
@@ -105,14 +109,14 @@ export default function UniversityCertification() {
                         <>
                             <input
                                 type="email"
-                                placeholder="University Email"
+                                placeholder="대학교 이메일"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full p-2 mb-4 border rounded"
                             />
                             <input
                                 type="text"
-                                placeholder="University Name"
+                                placeholder="대학교 이름"
                                 value={univName}
                                 onChange={(e) => setUnivName(e.target.value)}
                                 className="w-full p-2 mb-4 border rounded"
@@ -122,7 +126,7 @@ export default function UniversityCertification() {
                                 disabled={isLoading}
                                 className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200 disabled:bg-blue-300"
                             >
-                                {isLoading ? 'Sending...' : 'Send Verification Email'}
+                                {isLoading ? '전송 중...' : '인증 메일 전송'}
                             </button>
                         </>
                     )}
@@ -145,7 +149,7 @@ export default function UniversityCertification() {
                         </>
                     )}
                     {step === 'verified' && (
-                        <p className="text-xl text-green-600">Your university email has been verified!</p>
+                        <p className="text-xl text-green-600">대학교 인증이 완료 되었습니다!</p>
                     )}
                     {message && <p className="mt-4 text-red-500">{message}</p>}
                 </div>

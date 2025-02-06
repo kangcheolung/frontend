@@ -39,7 +39,7 @@ export default function Home() {
         <div className="min-h-screen flex flex-col bg-gray-100">
             <header className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Welcome to Our App</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Stitch</h1>
                     {isLoggedIn && (
                         <Link href="/mypage" className="text-blue-600 hover:text-blue-800">
                             마이페이지
@@ -54,12 +54,12 @@ export default function Home() {
                     <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
                         {!isLoggedIn && (
                             <>
-                                <p className="text-xl text-gray-700 mb-4">Please log in to continue</p>
+                                <p className="text-xl text-gray-700 mb-4">로그인</p>
                                 <button
                                     onClick={handleKakaoLogin}
                                     className="w-full bg-yellow-400 text-gray-900 py-2 px-4 rounded hover:bg-yellow-500 transition duration-200"
                                 >
-                                    Login with Kakao
+                                    카카오 로그인
                                 </button>
                             </>
                         )}

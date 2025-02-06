@@ -5,45 +5,42 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function MyPage() {
-    const [userData, setUserData] = useState(null);
+    const [userData, setUserData] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
     useEffect(() => {
-        checkLoginStatus();
-        fetchUserData();
-    }, []);
+        const initializeUser = async () => {
+            try {
+                // 먼저 로그인 체크
+                const sessionResponse = await fetch(`${serverUrl}/api/auth/session`, {
+                    credentials: 'include'
+                });
+                const sessionData = await sessionResponse.json();
 
-    const checkLoginStatus = async () => {
-        try {
-            const response = await fetch(`${serverUrl}/api/auth/session`, {
-                credentials: 'include'
-            });
-            const data = await response.json();
-            if (!data.result.isLoggedIn) {
+                if (!sessionData.result.isLoggedIn) {
+                    router.push('/');
+                    return;
+                }
+
+                // 로그인 되어있다면 유저 데이터 가져오기
+                const userResponse = await fetch(`${serverUrl}/api/users/me`, {
+                    credentials: 'include'
+                });
+                const userData = await userResponse.json();
+                console.log('User data:', userData);
+                setUserData(userData.result);
+            } catch (error) {
+                console.error('Failed to initialize user:', error);
                 router.push('/');
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error('Failed to check login status', error);
-            router.push('/');
-        }
-    };
+        };
 
-    const fetchUserData = async () => {
-        try {
-            // API 엔드포인트는 실제 백엔드 구현에 맞게 수정해야 합니다
-            const response = await fetch(`${serverUrl}/api/user/profile`, {
-                credentials: 'include'
-            });
-            const data = await response.json();
-            setUserData(data);
-        } catch (error) {
-            console.error('Failed to fetch user data', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        initializeUser();
+    }, [router, serverUrl]);
 
     const handleLogout = () => {
         window.location.href = `${serverUrl}/logout`;
@@ -62,7 +59,7 @@ export default function MyPage() {
             <header className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     <Link href="/home" className="text-3xl font-bold text-gray-900">
-                        Our App
+                        Stitch
                     </Link>
                     <div className="flex items-center space-x-4">
                         <span className="text-gray-600">마이페이지</span>
@@ -74,12 +71,12 @@ export default function MyPage() {
                 <div className="bg-white rounded-lg shadow px-5 py-6 sm:px-6">
                     <div className="border-b border-gray-200 pb-6 mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">내 정보</h2>
-                        {userData && (
-                            <div className="mt-4">
-                                <p className="text-gray-600">이메일: {userData.email}</p>
-                                <p className="text-gray-600">이름: {userData.name}</p>
-                            </div>
-                        )}
+                        <div className="mt-4">
+                            <p className="text-gray-600">이메일: {userData.email}</p>
+                            <p className="text-gray-600">이름: {userData.name}</p>
+                            <p className="text-gray-600">닉네임: {userData.nickname}</p>
+                            <p className="text-gray-600">인증 상태: {userData.campusCertified ? '인증됨' : '미인증'}</p>
+                        </div>
                     </div>
 
                     <div className="space-y-4">

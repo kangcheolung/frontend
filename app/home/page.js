@@ -38,7 +38,7 @@ export default function HomePage() {
         <div className="min-h-screen bg-gray-100">
             <header className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Our App</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Stitch</h1>
                     <Link href="/mypage" className="text-blue-600 hover:text-blue-800">
                         마이페이지
                     </Link>
