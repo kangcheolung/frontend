@@ -30,7 +30,7 @@ export default function MyPage() {
                 });
                 const userData = await userResponse.json();
                 console.log('User data:', userData);
-                setUserData(userData.result);
+                setUserData(userData);
             } catch (error) {
                 console.error('Failed to initialize user:', error);
                 router.push('/');
@@ -80,13 +80,22 @@ export default function MyPage() {
                     </div>
 
                     <div className="space-y-4">
-                        <button
-                            onClick={handleUnivCert}
-                            className="w-full sm:w-auto bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
-                        >
-                            대학교 인증하기
-                        </button>
-
+                        {
+                            userData.campusCertified ? (
+                                <Link href="/major-selection">
+                                    <a className="w-full sm:w-auto bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200">
+                                        전공 선택 및 변경
+                                    </a>
+                                </Link>
+                            ) : (
+                                <button
+                                    onClick={handleUnivCert}
+                                    className="w-full sm:w-auto bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
+                                >
+                                    대학교 인증하기
+                                </button>
+                            )
+                        }
                         <button
                             onClick={handleLogout}
                             className="w-full sm:w-auto bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200 ml-0 sm:ml-4"
