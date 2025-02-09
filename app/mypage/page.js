@@ -37,6 +37,7 @@ export default function MyPage() {
             } finally {
                 setIsLoading(false);
             }
+
         };
 
         initializeUser();
