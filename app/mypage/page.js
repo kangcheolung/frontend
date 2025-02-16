@@ -40,6 +40,7 @@ export default function MyPage() {
 
         };
 
+
         initializeUser();
     }, [router, serverUrl]);
 
