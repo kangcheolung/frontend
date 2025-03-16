@@ -37,16 +37,13 @@ export default function MyPage() {
             } finally {
                 setIsLoading(false);
             }
-
-
         };
-
 
         initializeUser();
     }, [router, serverUrl]);
 
     const handleLogout = () => {
-        window.location.href = `${serverUrl}/logout`;
+        window.location.href = `${serverUrl}/`;
     };
 
     const handleUnivCert = () => {
@@ -54,64 +51,148 @@ export default function MyPage() {
     };
 
     if (isLoading) {
-        return <div className="text-2xl text-gray-600 text-center mt-10">Loading...</div>;
+        return (
+            <div className="flex justify-center items-center h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+                <div className="text-2xl text-indigo-600 font-medium">Loading...</div>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <header className="bg-white shadow-sm">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+            <header className="bg-white shadow-md">
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <Link href="/home" className="text-3xl font-bold text-gray-900">
-                        Stitch
+                    <Link href="/home" className="flex items-center">
+                        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">Stitch</h1>
+                        <span className="ml-3 text-gray-500 text-sm">스터디 매칭 플랫폼</span>
                     </Link>
-                    <div className="flex items-center space-x-4">
-                        <span className="text-gray-600">마이페이지</span>
+                    <div className="flex items-center">
+                        <span className="px-4 py-2 bg-indigo-600 text-white rounded-full font-medium">마이페이지</span>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                <div className="bg-white rounded-lg shadow px-5 py-6 sm:px-6">
-                    <div className="border-b border-gray-200 pb-6 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">내 정보</h2>
-                        <div className="mt-4">
-                            <p className="text-gray-600">이메일: {userData.email}</p>
-                            <p className="text-gray-600">이름: {userData.name}</p>
-                            <p className="text-gray-600">닉네임: {userData.nickname}</p>
-                            <p className="text-gray-600">인증 상태: {userData.campusCertified ? '인증됨' : '미인증'}</p>
-                        </div>
+            <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div className="p-6 sm:p-8 bg-gradient-to-r from-indigo-500 to-purple-600">
+                        <h2 className="text-3xl font-bold text-white">내 정보</h2>
+                        <p className="text-indigo-100 mt-2">내 프로필 및 인증 상태를 확인하고 관리할 수 있습니다.</p>
                     </div>
 
-                    <div className="space-y-4">
-                        {
-                            userData.campusCertified ? (
-                                <Link href="/major-selection">
-                                    <a className="w-full sm:w-auto bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200">
-                                        전공 선택 및 변경
-                                    </a>
-                                </Link>
-                            ) : (
-                                <button
-                                    onClick={handleUnivCert}
-                                    className="w-full sm:w-auto bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-200"
-                                >
-                                    대학교 인증하기
-                                </button>
-                            )
-                        }
-                        <button
-                            onClick={handleLogout}
-                            className="w-full sm:w-auto bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-200 ml-0 sm:ml-4"
-                        >
-                            로그아웃
-                        </button>
+                    <div className="p-6 sm:p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">기본 정보</h3>
+                                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                                        <div className="flex">
+                                            <div className="w-24 text-gray-500">이메일</div>
+                                            <div className="font-medium text-gray-900">{userData.email || '-'}</div>
+                                        </div>
+                                        <div className="flex">
+                                            <div className="w-24 text-gray-500">이름</div>
+                                            <div className="font-medium text-gray-900">{userData.name || '-'}</div>
+                                        </div>
+                                        <div className="flex">
+                                            <div className="w-24 text-gray-500">닉네임</div>
+                                            <div className="font-medium text-gray-900">{userData.nickname || '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">인증 정보</h3>
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <div className="flex items-center mb-2">
+                                            <div className="w-24 text-gray-500">인증 상태</div>
+                                            <div className="flex items-center">
+                                                {userData.campusCertified ? (
+                                                    <div className="flex items-center">
+                                                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                                                        <span className="text-green-600 font-medium">인증 완료</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center">
+                                                        <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
+                                                        <span className="text-amber-600 font-medium">미인증</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-500 mt-2">
+                                            {userData.campusCertified
+                                                ? '대학교 인증이 완료되었습니다. 추가 인증 정보를 관리할 수 있습니다.'
+                                                : '대학교 인증을 완료하면 더 많은 스터디 그룹에 참여할 수 있습니다.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3">내 활동</h3>
+                                    <div className="bg-gray-50 rounded-lg p-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                                                <div className="text-3xl font-bold text-indigo-600">0</div>
+                                                <div className="text-gray-500 text-sm">참여중인 스터디</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                                                <div className="text-3xl font-bold text-purple-600">0</div>
+                                                <div className="text-gray-500 text-sm">완료한 스터디</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">프로필 관리</h3>
+                                    <div className="space-y-3">
+                                        {userData.campusCertified ? (
+                                            <Link href="/major-selection">
+                                                <a className="block w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition duration-200 text-center font-medium">
+                                                    전공 선택 및 변경
+                                                </a>
+                                            </Link>
+                                        ) : (
+                                            <button
+                                                onClick={handleUnivCert}
+                                                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-purple-600 hover:to-purple-700 transition duration-200 font-medium"
+                                            >
+                                                대학교 인증하기
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full border border-red-500 text-red-500 py-3 px-4 rounded-lg hover:bg-red-50 transition duration-200"
+                                        >
+                                            로그아웃
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
 
-            <footer className="bg-gray-800 text-white py-4 mt-auto">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <p>&copy; 2024 Our App. All rights reserved.</p>
+            <footer className="bg-indigo-900 text-indigo-100 py-8 mt-12">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col md:flex-row justify-between items-center">
+                        <div className="mb-4 md:mb-0">
+                            <h2 className="text-2xl font-bold text-white mb-2">Stitch</h2>
+                            <p className="text-indigo-200">스터디와 매치의 만남, 스티치</p>
+                        </div>
+                        <div className="flex space-x-6">
+                            <a href="#" className="text-indigo-200 hover:text-white">서비스 소개</a>
+                            <a href="#" className="text-indigo-200 hover:text-white">이용약관</a>
+                            <a href="#" className="text-indigo-200 hover:text-white">개인정보처리방침</a>
+                            <a href="#" className="text-indigo-200 hover:text-white">고객센터</a>
+                        </div>
+                    </div>
+                    <div className="mt-8 border-t border-indigo-800 pt-6 text-center text-indigo-300">
+                        <p>&copy; 2024 Stitch. All rights reserved.</p>
+                    </div>
                 </div>
             </footer>
         </div>
