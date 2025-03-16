@@ -30,7 +30,7 @@ export default function MyPage() {
                 });
                 const userData = await userResponse.json();
                 console.log('User data:', userData);
-                setUserData(userData);
+                setUserData(userData.result);
             } catch (error) {
                 console.error('Failed to initialize user:', error);
                 router.push('/');
@@ -149,10 +149,9 @@ export default function MyPage() {
                                     <h3 className="text-lg font-semibold text-gray-900 mb-4">프로필 관리</h3>
                                     <div className="space-y-3">
                                         {userData.campusCertified ? (
-                                            <Link href="/major-selection">
-                                                <a className="block w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition duration-200 text-center font-medium">
-                                                    전공 선택 및 변경
-                                                </a>
+                                            <Link href="/major-selection"
+                                                  className="block w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition duration-200 text-center font-medium">
+                                                전공 선택 및 변경
                                             </Link>
                                         ) : (
                                             <button

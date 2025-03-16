@@ -35,40 +35,87 @@ export default function Home() {
         window.location.href = `${serverUrl}/oauth2/authorization/kakao`;
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+                <div className="text-2xl text-indigo-600 font-medium">Loading...</div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen flex flex-col bg-gray-100">
-            <header className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Stitch</h1>
-                    {isLoggedIn && (
-                        <Link href="/mypage" className="text-blue-600 hover:text-blue-800">
-                            마이페이지
-                        </Link>
-                    )}
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 to-blue-50">
+            <header className="bg-white shadow-md">
+                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">Stitch</h1>
                 </div>
             </header>
-            <main className="flex-grow flex items-center justify-center">
-                {isLoading ? (
-                    <div className="text-2xl text-gray-600">Loading...</div>
-                ) : (
-                    <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-                        {!isLoggedIn && (
-                            <>
-                                <p className="text-xl text-gray-700 mb-4">로그인</p>
-                                <button
-                                    onClick={handleKakaoLogin}
-                                    className="w-full bg-yellow-400 text-gray-900 py-2 px-4 rounded hover:bg-yellow-500 transition duration-200"
-                                >
-                                    카카오 로그인
-                                </button>
-                            </>
-                        )}
+
+            <main className="flex-grow flex items-center justify-center p-4">
+                <div className="w-full max-w-md">
+                    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                        {/* Image Banner */}
+                        <div className="h-40 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center p-6">
+                            <div className="text-center">
+                                <h2 className="text-2xl font-bold text-white mb-2">스티치에 오신 것을 환영합니다</h2>
+                                <p className="text-indigo-100">함께 배우고 성장하는 스터디 매칭 플랫폼</p>
+                            </div>
+                        </div>
+
+                        <div className="p-8">
+                            <div className="text-center mb-8">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">로그인</h3>
+                                <p className="text-gray-600">스티치에 로그인하고 스터디 그룹을 찾아보세요.</p>
+                            </div>
+
+                            <button
+                                onClick={handleKakaoLogin}
+                                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium py-3 px-4 rounded-xl hover:from-indigo-600 hover:to-purple-700 transition duration-200 flex items-center justify-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-5 h-5 mr-2">
+                                    <path fill="currentColor" d="M12,3C17.5,3,22,6.58,22,11c0,4.42-4.5,8-10,8c-0.59,0-1.17-0.04-1.73-0.12L6.2,21.83c-0.39,0.39-1.02,0.39-1.41,0 c-0.19-0.19-0.3-0.44-0.3-0.71v-4.88C3.2,14.85,2,13.03,2,11C2,6.58,6.5,3,12,3z" />
+                                </svg>
+                                카카오 로그인
+                            </button>
+
+                            <div className="mt-8 pt-6 border-t border-gray-200">
+                                <div className="flex items-center justify-center">
+                                    <span className="text-sm text-gray-500 text-center">회원이 아니신가요?<br />카카오 계정으로 간편하게 가입하실 수 있습니다.</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                )}
+
+                    <div className="mt-8 text-center">
+                        <p className="text-gray-600 text-sm">
+                            <span className="text-indigo-600 font-medium">Stitch</span>는 스터디와 매치의 결합으로<br />최적의 스터디 그룹을 찾아드립니다.
+                        </p>
+                    </div>
+                </div>
             </main>
-            <footer className="bg-gray-800 text-white py-4">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <p>&copy; 2024 Our App. All rights reserved.</p>
+
+            <footer className="bg-indigo-900 text-indigo-100 py-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col md:flex-row justify-between items-center">
+                        <div className="mb-4 md:mb-0">
+                            <h2 className="text-2xl font-bold text-white mb-2">Stitch</h2>
+                            <p className="text-indigo-200">스터디와 매치의 만남, 스티치</p>
+                        </div>
+                        <div className="flex space-x-6">
+                            <a href="#" className="text-indigo-200 hover:text-white">서비스 소개</a>
+                            <a href="#" className="text-indigo-200 hover:text-white">이용약관</a>
+                            <a href="#" className="text-indigo-200 hover:text-white">개인정보처리방침</a>
+                            <a href="#" className="text-indigo-200 hover:text-white">고객센터</a>
+                        </div>
+                    </div>
+                    <div className="mt-8 border-t border-indigo-800 pt-6 text-center text-indigo-300">
+                        <p>&copy; 2024 Stitch. All rights reserved.</p>
+                    </div>
                 </div>
             </footer>
         </div>
