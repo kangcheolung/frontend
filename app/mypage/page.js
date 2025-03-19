@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCachedUserData, isUserCached, clearUserCache } from '@/app/services/userCache';
+import { getCachedUserData, isUserCached, clearUserCache, cacheUserData } from '@/app/services/userCache';
 
 export default function MyPage() {
     const [userData, setUserData] = useState(null);
@@ -17,38 +17,75 @@ export default function MyPage() {
 
     const initializeUser = async () => {
         try {
-            // 먼저 캐시에서 사용자 정보 확인
+            // 캐시에서 먼저 사용자 정보 확인
             if (isUserCached()) {
                 const cachedUser = getCachedUserData();
                 setUserData(cachedUser);
-                setIsLoading(false);
-                console.log('User data loaded from cache:', cachedUser);
-                return;
+
+                // 캐시가 있더라도 최신 정보를 가져와서 업데이트 (백그라운드)
+                refreshUserData();
+            } else {
+                // 캐시에 없으면 로그인 체크
+                const sessionResponse = await fetch(`${serverUrl}/api/auth/session`, {
+                    credentials: 'include'
+                });
+                const sessionData = await sessionResponse.json();
+
+                if (!sessionData.result.isLoggedIn) {
+                    router.push('/');
+                    return;
+                }
+
+                // 로그인 되어있다면 유저 데이터 가져오기
+                await fetchAndCacheUserData();
             }
-
-            // 캐시에 없으면 로그인 체크
-            const sessionResponse = await fetch(`${serverUrl}/api/auth/session`, {
-                credentials: 'include'
-            });
-            const sessionData = await sessionResponse.json();
-
-            if (!sessionData.result.isLoggedIn) {
-                router.push('/');
-                return;
-            }
-
-            // 로그인 되어있다면 유저 데이터 가져오기
-            const userResponse = await fetch(`${serverUrl}/api/users/me`, {
-                credentials: 'include'
-            });
-            const userData = await userResponse.json();
-            console.log('User data fetched from API:', userData);
-            setUserData(userData.result);
         } catch (error) {
             console.error('Failed to initialize user:', error);
             router.push('/');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // 백그라운드에서 최신 사용자 정보 가져오기
+    const refreshUserData = async () => {
+        try {
+            await fetchAndCacheUserData();
+        } catch (error) {
+            console.error('Failed to refresh user data:', error);
+            // 실패해도 기존 캐시 데이터로 UI 유지 (사용자 경험 보호)
+        }
+    };
+
+    // 사용자 정보 가져와서 캐싱 및 상태 업데이트
+    const fetchAndCacheUserData = async () => {
+        try {
+            const userResponse = await fetch(`${serverUrl}/api/users/me`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+            });
+
+            if (!userResponse.ok) {
+                throw new Error('사용자 정보를 가져오는데 실패했습니다.');
+            }
+
+            const userData = await userResponse.json();
+
+            if (userData.code === 'SUCCESS' && userData.result) {
+                // 캐시 업데이트
+                cacheUserData(userData.result);
+
+                // UI 업데이트
+                setUserData(userData.result);
+                console.log('User data refreshed from API:', userData.result);
+                return userData.result;
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            throw error;
         }
     };
 
@@ -157,20 +194,20 @@ export default function MyPage() {
                                     </div>
                                 </div>
 
-                                {userData.campusCertified && userData.userCamInfo && (
+                                {userData.campusCertified && (
                                     <div>
                                         <h3 className="text-lg font-semibold text-gray-900 mb-3">대학 정보</h3>
                                         <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                                             <div className="flex">
                                                 <div className="w-24 text-gray-500">대학교</div>
                                                 <div className="font-medium text-gray-900">
-                                                    {userData.userCamInfo.university?.name || '-'}
+                                                    {userData.userCamInfo?.university?.name || '-'}
                                                 </div>
                                             </div>
                                             <div className="flex">
                                                 <div className="w-24 text-gray-500">전공</div>
                                                 <div className="font-medium text-gray-900">
-                                                    {userData.userCamInfo.major?.name || '전공 미설정'}
+                                                    {userData.userCamIjnfo?.maor?.name || '전공 미설정'}
                                                 </div>
                                             </div>
                                         </div>

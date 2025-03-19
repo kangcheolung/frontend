@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCachedUserData, isUserCached, updateCachedUserField } from '@/app/services/userCache';
+import { getCachedUserData, isUserCached, updateCachedUserField, cacheUserData } from '@/app/services/userCache';
 
 export default function MajorSelection() {
     const [selectedMajor, setSelectedMajor] = useState(null);
@@ -104,10 +104,8 @@ export default function MajorSelection() {
             setMessage('전공을 선택해주세요.');
             return;
         }
-        console.log('Selected major:', selectedMajor);
-        console.log('User data:', userData);
-        if (!userData || !userData.userId) {
 
+        if (!userData || !userData.userId) {
             setMessage('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
             return;
         }
@@ -131,18 +129,43 @@ export default function MajorSelection() {
             if (response.ok && data.code === 'SUCCESS') {
                 // 캐시된 사용자 정보 업데이트
                 if (isUserCached() && data.result) {
-                    // userCamInfo가 없으면 생성
-                    if (!userData.userCamInfo) {
-                        userData.userCamInfo = {};
+                    // 최신 사용자 정보 가져오기
+                    const freshUserDataResponse = await fetch(`${serverUrl}/api/users/me`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'include',
+                    });
+
+                    if (freshUserDataResponse.ok) {
+                        const freshUserData = await freshUserDataResponse.json();
+                        if (freshUserData.code === 'SUCCESS' && freshUserData.result) {
+                            // 전체 사용자 데이터 갱신
+                            const cachedUser = getCachedUserData();
+                            // 기존 캐시 데이터와 새로운 데이터 병합
+                            const updatedUserData = { ...cachedUser, ...freshUserData.result };
+
+                            // 캐시에 전체 업데이트
+                            cacheUserData(updatedUserData);
+                            console.log('Completely refreshed user cache with new data including major:', data.result);
+                        }
+                    } else {
+                        // API 호출 실패 시 부분 업데이트라도 시도
+                        const cachedUser = getCachedUserData();
+
+                        // userCamInfo가 없으면 생성
+                        if (!cachedUser.userCamInfo) {
+                            cachedUser.userCamInfo = {};
+                        }
+
+                        // major 정보만 업데이트
+                        cachedUser.userCamInfo.major = data.result;
+
+                        // 캐시 업데이트
+                        cacheUserData(cachedUser);
+                        console.log('Partially updated user cache with new major:', data.result);
                     }
-
-                    // major 정보 업데이트
-                    userData.userCamInfo.major = data.result;
-
-                    // 캐시 업데이트
-                    updateCachedUserField('userCamInfo', userData.userCamInfo);
-
-                    console.log('Updated user cache with new major:', data.result);
                 }
 
                 router.push('/home');
