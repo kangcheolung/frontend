@@ -194,6 +194,7 @@ export default function MajorSelection() {
                             <a href="#" className="text-indigo-200 hover:text-white">이용약관</a>
                             <a href="#" className="text-indigo-200 hover:text-white">개인정보처리방침</a>
                             <a href="#" className="text-indigo-200 hover:text-white">고객센터</a>
+
                         </div>
                     </div>
                     <div className="mt-8 border-t border-indigo-800 pt-6 text-center text-indigo-300">
