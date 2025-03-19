@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { cacheUserData, isUserLoggedIn } from './services/userCache';
 
 export default function Home() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -11,23 +12,91 @@ export default function Home() {
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
     useEffect(() => {
+        // 페이지 로드 시 로그인 상태 확인
         checkLoginStatus();
+
+        // 카카오 로그인 콜백 처리
+        handleKakaoCallback();
     }, []);
 
     const checkLoginStatus = async () => {
         try {
+            // 먼저 캐시에서 로그인 상태 확인
+            if (isUserLoggedIn()) {
+                setIsLoggedIn(true);
+                router.push('/home');
+                return;
+            }
+
+            // 캐시에 없으면 서버에 확인
             const response = await fetch(`${serverUrl}/api/auth/session`, {
                 credentials: 'include'
             });
             const data = await response.json();
+
             setIsLoggedIn(data.result.isLoggedIn);
+
             if (data.result.isLoggedIn) {
+                // 로그인 되어 있다면 사용자 정보 가져와서 캐싱
+                await fetchAndCacheUserData();
                 router.push('/home');
             }
         } catch (error) {
             console.error('Failed to check login status', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // 카카오 로그인 콜백 처리 함수
+    const handleKakaoCallback = async () => {
+        // URL 파라미터에서 인증 코드 확인
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+
+        if (authCode) {
+            setIsLoading(true);
+            try {
+                // 인증 코드로 로그인 처리 (이 부분은 백엔드에서 대부분 처리)
+                // 사용자 정보 가져오기
+                await fetchAndCacheUserData();
+
+                // 홈 페이지로 이동
+                router.push('/home');
+            } catch (error) {
+                console.error('Failed to process Kakao login', error);
+                setIsLoading(false);
+            }
+        }
+    };
+
+    // 사용자 정보 가져와서 캐싱하는 함수
+    const fetchAndCacheUserData = async () => {
+        try {
+            const userResponse = await fetch(`${serverUrl}/api/users/me`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+            });
+
+            if (!userResponse.ok) {
+                throw new Error('사용자 정보를 가져오는데 실패했습니다.');
+            }
+
+            const userData = await userResponse.json();
+
+            if (userData.code === 'SUCCESS' && userData.result) {
+                // 사용자 정보 캐시에 저장
+                cacheUserData(userData.result);
+                console.log('User data fetched and cached successfully');
+                return userData.result;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            return null;
         }
     };
 

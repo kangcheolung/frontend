@@ -9,8 +9,42 @@ export default function MajorSelection() {
     const [isLoading, setIsLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [majors, setMajors] = useState([]);
+    const [userId, setUserId] = useState(null);
     const router = useRouter();
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
+
+    // 사용자 정보 불러오기
+    useEffect(() => {
+        const fetchUserInfo = async () => {
+            try {
+                const response = await fetch(`${serverUrl}/api/users/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'include',
+                });
+
+                if (!response.ok) {
+                    throw new Error('사용자 정보를 불러오는데 실패했습니다.');
+                }
+
+                const data = await response.json();
+
+                if (data.code === 'SUCCESS' && data.result) {
+                    setUserId(data.result.id);
+                } else {
+                    console.error('Invalid user data format:', data);
+                    setMessage('사용자 데이터를 불러올 수 없습니다.');
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                setMessage(error.message);
+            }
+        };
+
+        fetchUserInfo();
+    }, [serverUrl]);
 
     // API에서 전공 리스트 불러오기
     useEffect(() => {
@@ -49,10 +83,18 @@ export default function MajorSelection() {
     }, [serverUrl]);
 
     const handleMajorSelect = async () => {
+        console.log('Selected major:', selectedMajor);
         if (!selectedMajor) {
             setMessage('전공을 선택해주세요.');
             return;
         }
+
+        if (!userId) {
+            console.error('User ID is not available.');
+            setMessage('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
+            return;
+        }
+
 
         setIsLoading(true);
         try {
@@ -62,7 +104,10 @@ export default function MajorSelection() {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
-                body: JSON.stringify({ majorId: selectedMajor }),
+                body: JSON.stringify({
+                    userId: userId,
+                    majorId: selectedMajor
+                }),
             });
 
             const data = await response.json();
@@ -194,7 +239,6 @@ export default function MajorSelection() {
                             <a href="#" className="text-indigo-200 hover:text-white">이용약관</a>
                             <a href="#" className="text-indigo-200 hover:text-white">개인정보처리방침</a>
                             <a href="#" className="text-indigo-200 hover:text-white">고객센터</a>
-
                         </div>
                     </div>
                     <div className="mt-8 border-t border-indigo-800 pt-6 text-center text-indigo-300">
