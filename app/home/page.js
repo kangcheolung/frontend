@@ -3,28 +3,73 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { cacheUserData, isUserCached, getCachedUserData } from '@/app/services/userCache';
 
 export default function HomePage() {
     const [isLoading, setIsLoading] = useState(true);
+    const [userData, setUserData] = useState(null);
     const router = useRouter();
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
     useEffect(() => {
-        checkLoginStatus();
+        checkLoginAndLoadUserData();
     }, []);
 
-    const checkLoginStatus = async () => {
+    // 로그인 체크 및 사용자 데이터 로드
+    const checkLoginAndLoadUserData = async () => {
         try {
+            // 로그인 상태 확인
             const response = await fetch(`${serverUrl}/api/auth/session`, {
                 credentials: 'include'
             });
             const data = await response.json();
+
             if (!data.result.isLoggedIn) {
                 router.push('/');
+                return;
+            }
+
+            // 캐시에 사용자 정보가 있는지 확인
+            if (isUserCached()) {
+                const cachedUser = getCachedUserData();
+                setUserData(cachedUser);
+                setIsLoading(false);
+                console.log('User data loaded from cache:', cachedUser);
+            } else {
+                // 캐시에 없으면 API에서 가져오기
+                await fetchAndCacheUserData();
             }
         } catch (error) {
-            console.error('Failed to check login status', error);
+            console.error('Failed to check login status or load user data', error);
             router.push('/');
+        }
+    };
+
+    // 사용자 정보 가져와서 캐싱
+    const fetchAndCacheUserData = async () => {
+        try {
+            const userResponse = await fetch(`${serverUrl}/api/users/me`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+            });
+
+            if (!userResponse.ok) {
+                throw new Error('사용자 정보를 가져오는데 실패했습니다.');
+            }
+
+            const userData = await userResponse.json();
+
+            if (userData.code === 'SUCCESS' && userData.result) {
+                // 사용자 정보 캐시에 저장 및 상태 업데이트
+                cacheUserData(userData.result);
+                setUserData(userData.result);
+                console.log('User data fetched and cached:', userData.result);
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
         } finally {
             setIsLoading(false);
         }
@@ -48,14 +93,48 @@ export default function HomePage() {
                         <Link href="/study/search" className="text-indigo-600 hover:text-indigo-800 font-medium">
                             스터디 찾기
                         </Link>
-                        <Link href="/mypage" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-medium transition-colors duration-200">
-                            마이페이지
-                        </Link>
+                        <div className="flex items-center">
+                            {userData && (
+                                <span className="mr-4 text-gray-700">
+                                    안녕하세요, {userData.name || userData.nickname || '사용자'}님!
+                                </span>
+                            )}
+                            <Link href="/mypage" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-medium transition-colors duration-200">
+                                마이페이지
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </header>
 
             <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* 사용자 맞춤 콘텐츠 섹션 */}
+                {userData && (
+                    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+                        <div className="p-8">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                                {userData.name || userData.nickname || '사용자'}님을 위한 추천
+                            </h2>
+                            {userData.campusCertified ? (
+                                <p className="text-gray-600">
+                                    {userData.userCamInfo?.major?.name ?
+                                        `${userData.userCamInfo.major.name} 전공자를 위한 맞춤 스터디 추천을 확인해보세요.` :
+                                        '전공을 설정하면 더 정확한 스터디 추천을 받을 수 있어요.'}
+                                </p>
+                            ) : (
+                                <div className="bg-yellow-50 p-4 rounded-lg">
+                                    <p className="text-yellow-700">
+                                        대학 인증을 완료하면 더 정확한 스터디 추천을 받을 수 있어요.
+                                    </p>
+                                    <Link href="/university-certification" className="mt-2 inline-block text-indigo-600 font-medium hover:text-indigo-800">
+                                        대학 인증하기 →
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
                     <div className="p-8 bg-gradient-to-r from-indigo-500 to-purple-600">
                         <h2 className="text-3xl font-bold text-white mb-2">스터디를 찾고 계신가요?</h2>

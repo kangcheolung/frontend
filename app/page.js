@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { cacheUserData, isUserLoggedIn } from './services/userCache';
+import { cacheUserData, isUserLoggedIn } from '@/app/services/userCache';
 
 export default function Home() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);

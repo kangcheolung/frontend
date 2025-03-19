@@ -3,98 +3,114 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getCachedUserData, isUserCached, updateCachedUserField } from '@/app/services/userCache';
 
 export default function MajorSelection() {
     const [selectedMajor, setSelectedMajor] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [majors, setMajors] = useState([]);
-    const [userId, setUserId] = useState(null);
+    const [userData, setUserData] = useState(null);
     const router = useRouter();
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
-    // 사용자 정보 불러오기
+    // 페이지 로드시 사용자 정보 및 전공 목록 불러오기
     useEffect(() => {
-        const fetchUserInfo = async () => {
-            try {
-                const response = await fetch(`${serverUrl}/api/users/me`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    credentials: 'include',
-                });
-
-                if (!response.ok) {
-                    throw new Error('사용자 정보를 불러오는데 실패했습니다.');
-                }
-
-                const data = await response.json();
-
-                if (data.code === 'SUCCESS' && data.result) {
-                    setUserId(data.result.id);
-                } else {
-                    console.error('Invalid user data format:', data);
-                    setMessage('사용자 데이터를 불러올 수 없습니다.');
-                }
-            } catch (error) {
-                console.error('Error fetching user info:', error);
-                setMessage(error.message);
-            }
+        const initialize = async () => {
+            await loadUserData();
+            await fetchMajors();
         };
 
-        fetchUserInfo();
-    }, [serverUrl]);
+        initialize();
+    }, []);
+
+    // 캐시 또는 API에서 사용자 정보 가져오기
+    const loadUserData = async () => {
+        try {
+            // 먼저 캐시에서 확인
+            if (isUserCached()) {
+                const cachedUser = getCachedUserData();
+                setUserData(cachedUser);
+                console.log('User data loaded from cache:', cachedUser);
+                return;
+            }
+
+            // 캐시에 없으면 API 호출
+            const response = await fetch(`${serverUrl}/api/users/me`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('사용자 정보를 불러오는데 실패했습니다.');
+            }
+
+            const data = await response.json();
+
+            if (data.code === 'SUCCESS' && data.result) {
+                setUserData(data.result);
+            } else {
+                console.error('Invalid user data format:', data);
+                setMessage('사용자 데이터를 불러올 수 없습니다.');
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            setMessage(error.message);
+            router.push('/');
+        }
+    };
 
     // API에서 전공 리스트 불러오기
-    useEffect(() => {
-        const fetchMajors = async () => {
-            try {
-                const response = await fetch(`${serverUrl}/api/majors/list`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    credentials: 'include',
-                });
+    const fetchMajors = async () => {
+        try {
+            const response = await fetch(`${serverUrl}/api/majors/list`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                credentials: 'include',
+            });
 
-                if (!response.ok) {
-                    throw new Error('전공 목록을 불러오는데 실패했습니다.');
-                }
-
-                const data = await response.json();
-                console.log('Majors data:', data);
-
-                if (data.code === 'SUCCESS' && Array.isArray(data.result)) {
-                    setMajors(data.result);
-                } else {
-                    console.error('Invalid data format:', data);
-                    setMessage('전공 데이터 형식이 올바르지 않습니다.');
-                }
-            } catch (error) {
-                console.error('Error fetching majors:', error);
-                setMessage(error.message);
-            } finally {
-                setIsLoading(false);
+            if (!response.ok) {
+                throw new Error('전공 목록을 불러오는데 실패했습니다.');
             }
-        };
 
-        fetchMajors();
-    }, [serverUrl]);
+            const data = await response.json();
+
+            if (data.code === 'SUCCESS' && Array.isArray(data.result)) {
+                setMajors(data.result);
+
+                // 현재 사용자의 전공이 설정되어 있다면 선택
+                if (userData?.userCamInfo?.major?.id) {
+                    setSelectedMajor(userData.userCamInfo.major.id);
+                }
+            } else {
+                console.error('Invalid data format:', data);
+                setMessage('전공 데이터 형식이 올바르지 않습니다.');
+            }
+        } catch (error) {
+            console.error('Error fetching majors:', error);
+            setMessage(error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleMajorSelect = async () => {
-        console.log('Selected major:', selectedMajor);
         if (!selectedMajor) {
             setMessage('전공을 선택해주세요.');
             return;
         }
+        console.log('Selected major:', selectedMajor);
+        console.log('User data:', userData);
+        if (!userData || !userData.userId) {
 
-        if (!userId) {
-            console.error('User ID is not available.');
             setMessage('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
             return;
         }
-
 
         setIsLoading(true);
         try {
@@ -105,7 +121,7 @@ export default function MajorSelection() {
                 },
                 credentials: 'include',
                 body: JSON.stringify({
-                    userId: userId,
+                    userId: userData.userId,
                     majorId: selectedMajor
                 }),
             });
@@ -113,6 +129,22 @@ export default function MajorSelection() {
             const data = await response.json();
 
             if (response.ok && data.code === 'SUCCESS') {
+                // 캐시된 사용자 정보 업데이트
+                if (isUserCached() && data.result) {
+                    // userCamInfo가 없으면 생성
+                    if (!userData.userCamInfo) {
+                        userData.userCamInfo = {};
+                    }
+
+                    // major 정보 업데이트
+                    userData.userCamInfo.major = data.result;
+
+                    // 캐시 업데이트
+                    updateCachedUserField('userCamInfo', userData.userCamInfo);
+
+                    console.log('Updated user cache with new major:', data.result);
+                }
+
                 router.push('/home');
             } else {
                 throw new Error(data.message || '전공 선택에 실패했습니다.');

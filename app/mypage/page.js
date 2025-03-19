@@ -3,46 +3,58 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getCachedUserData, isUserCached, clearUserCache } from '@/app/services/userCache';
 
 export default function MyPage() {
-    const [userData, setUserData] = useState({});
+    const [userData, setUserData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
     useEffect(() => {
-        const initializeUser = async () => {
-            try {
-                // 먼저 로그인 체크
-                const sessionResponse = await fetch(`${serverUrl}/api/auth/session`, {
-                    credentials: 'include'
-                });
-                const sessionData = await sessionResponse.json();
-
-                if (!sessionData.result.isLoggedIn) {
-                    router.push('/');
-                    return;
-                }
-
-                // 로그인 되어있다면 유저 데이터 가져오기
-                const userResponse = await fetch(`${serverUrl}/api/users/me`, {
-                    credentials: 'include'
-                });
-                const userData = await userResponse.json();
-                console.log('User data:', userData);
-                setUserData(userData.result);
-            } catch (error) {
-                console.error('Failed to initialize user:', error);
-                router.push('/');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         initializeUser();
-    }, [router, serverUrl]);
+    }, []);
+
+    const initializeUser = async () => {
+        try {
+            // 먼저 캐시에서 사용자 정보 확인
+            if (isUserCached()) {
+                const cachedUser = getCachedUserData();
+                setUserData(cachedUser);
+                setIsLoading(false);
+                console.log('User data loaded from cache:', cachedUser);
+                return;
+            }
+
+            // 캐시에 없으면 로그인 체크
+            const sessionResponse = await fetch(`${serverUrl}/api/auth/session`, {
+                credentials: 'include'
+            });
+            const sessionData = await sessionResponse.json();
+
+            if (!sessionData.result.isLoggedIn) {
+                router.push('/');
+                return;
+            }
+
+            // 로그인 되어있다면 유저 데이터 가져오기
+            const userResponse = await fetch(`${serverUrl}/api/users/me`, {
+                credentials: 'include'
+            });
+            const userData = await userResponse.json();
+            console.log('User data fetched from API:', userData);
+            setUserData(userData.result);
+        } catch (error) {
+            console.error('Failed to initialize user:', error);
+            router.push('/');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleLogout = () => {
+        // 로그아웃 시 캐시 삭제
+        clearUserCache();
         window.location.href = `${serverUrl}/`;
     };
 
@@ -54,6 +66,24 @@ export default function MyPage() {
         return (
             <div className="flex justify-center items-center h-screen bg-gradient-to-br from-purple-50 to-blue-50">
                 <div className="text-2xl text-indigo-600 font-medium">Loading...</div>
+            </div>
+        );
+    }
+
+    // 사용자 데이터가 없는 경우 처리
+    if (!userData) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+                <div className="bg-white p-8 rounded-xl shadow-md text-center">
+                    <div className="text-xl text-red-600 font-medium mb-4">사용자 정보를 불러올 수 없습니다</div>
+                    <p className="text-gray-600 mb-6">로그인이 필요하거나 세션이 만료되었을 수 있습니다.</p>
+                    <button
+                        onClick={() => router.push('/')}
+                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                        로그인 페이지로 이동
+                    </button>
+                </div>
             </div>
         );
     }
@@ -126,6 +156,26 @@ export default function MyPage() {
                                         </p>
                                     </div>
                                 </div>
+
+                                {userData.campusCertified && userData.userCamInfo && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-3">대학 정보</h3>
+                                        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                                            <div className="flex">
+                                                <div className="w-24 text-gray-500">대학교</div>
+                                                <div className="font-medium text-gray-900">
+                                                    {userData.userCamInfo.university?.name || '-'}
+                                                </div>
+                                            </div>
+                                            <div className="flex">
+                                                <div className="w-24 text-gray-500">전공</div>
+                                                <div className="font-medium text-gray-900">
+                                                    {userData.userCamInfo.major?.name || '전공 미설정'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-6">
@@ -134,11 +184,15 @@ export default function MyPage() {
                                     <div className="bg-gray-50 rounded-lg p-4">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                                <div className="text-3xl font-bold text-indigo-600">0</div>
+                                                <div className="text-3xl font-bold text-indigo-600">
+                                                    {userData.participatingStudies || 0}
+                                                </div>
                                                 <div className="text-gray-500 text-sm">참여중인 스터디</div>
                                             </div>
                                             <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                                <div className="text-3xl font-bold text-purple-600">0</div>
+                                                <div className="text-3xl font-bold text-purple-600">
+                                                    {userData.completedStudies || 0}
+                                                </div>
                                                 <div className="text-gray-500 text-sm">완료한 스터디</div>
                                             </div>
                                         </div>

@@ -1,4 +1,3 @@
-// services/userCache.js
 'use client';
 
 // 사용자 정보 저장 키
@@ -9,7 +8,6 @@ const USER_AUTH_KEY = 'stitch_auth_status';
 export const cacheUserData = (userData) => {
     if (typeof window !== 'undefined') {
         localStorage.setItem(USER_CACHE_KEY, JSON.stringify(userData));
-        // 인증 상태도 함께 저장
         localStorage.setItem(USER_AUTH_KEY, 'true');
     }
 };
