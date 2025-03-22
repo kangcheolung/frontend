@@ -201,13 +201,13 @@ export default function MyPage() {
                                             <div className="flex">
                                                 <div className="w-24 text-gray-500">대학교</div>
                                                 <div className="font-medium text-gray-900">
-                                                    {userData.userCamInfo?.university?.name || '-'}
+                                                    {userData.campusName || '-'}
                                                 </div>
                                             </div>
                                             <div className="flex">
                                                 <div className="w-24 text-gray-500">전공</div>
                                                 <div className="font-medium text-gray-900">
-                                                    {userData.userCamIjnfo?.maor?.name || '전공 미설정'}
+                                                    {userData.majorName || '전공 미설정'}
                                                 </div>
                                             </div>
                                         </div>

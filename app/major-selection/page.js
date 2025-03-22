@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCachedUserData, isUserCached, updateCachedUserField, cacheUserData } from '@/app/services/userCache';
+import { getCachedUserData, isUserCached, cacheUserData } from '@/app/services/userCache';
 
 export default function MajorSelection() {
     const [selectedMajor, setSelectedMajor] = useState(null);
+    const [initialMajor, setInitialMajor] = useState(null); // 초기 전공 ID 저장
     const [isLoading, setIsLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [majors, setMajors] = useState([]);
@@ -23,6 +24,20 @@ export default function MajorSelection() {
 
         initialize();
     }, []);
+
+    // 사용자 정보 불러온 후 전공 정보 설정
+    useEffect(() => {
+        if (userData && majors.length > 0) {
+            // 사용자의 현재 전공 정보 확인
+            const currentMajorId = userData.majorId || userData.userCamInfo?.major?.id;
+
+            if (currentMajorId) {
+                setSelectedMajor(currentMajorId);
+                setInitialMajor(currentMajorId); // 초기 전공 저장
+                console.log('User has existing major ID:', currentMajorId);
+            }
+        }
+    }, [userData, majors]);
 
     // 캐시 또는 API에서 사용자 정보 가져오기
     const loadUserData = async () => {
@@ -82,11 +97,6 @@ export default function MajorSelection() {
 
             if (data.code === 'SUCCESS' && Array.isArray(data.result)) {
                 setMajors(data.result);
-
-                // 현재 사용자의 전공이 설정되어 있다면 선택
-                if (userData?.userCamInfo?.major?.id) {
-                    setSelectedMajor(userData.userCamInfo.major.id);
-                }
             } else {
                 console.error('Invalid data format:', data);
                 setMessage('전공 데이터 형식이 올바르지 않습니다.');
@@ -105,13 +115,20 @@ export default function MajorSelection() {
             return;
         }
 
-        if (!userData || !userData.userId) {
+        // 사용자 ID 확인 - 여러 가능한 필드명 시도
+        const userId = userData?.id || userData?.userId || userData?.user_id;
+
+        if (!userId) {
+            // 디버깅 도구 - 사용자 데이터 구조 확인용
+            console.log('User data structure:', userData);
             setMessage('사용자 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
             return;
         }
 
         setIsLoading(true);
         try {
+            console.log('Sending API request with:', { userId, majorId: selectedMajor });
+
             const response = await fetch(`${serverUrl}/api/majors/select`, {
                 method: 'POST',
                 headers: {
@@ -119,12 +136,13 @@ export default function MajorSelection() {
                 },
                 credentials: 'include',
                 body: JSON.stringify({
-                    userId: userData.userId,
+                    userId: userId,
                     majorId: selectedMajor
                 }),
             });
 
             const data = await response.json();
+            console.log('API response:', data);
 
             if (response.ok && data.code === 'SUCCESS') {
                 // 캐시된 사용자 정보 업데이트
@@ -159,8 +177,13 @@ export default function MajorSelection() {
                             cachedUser.userCamInfo = {};
                         }
 
-                        // major 정보만 업데이트
+                        // major 정보 업데이트
                         cachedUser.userCamInfo.major = data.result;
+                        // 전공 이름도 함께 저장 (가능한 경우)
+                        const majorData = majors.find(m => m.id === selectedMajor);
+                        if (majorData) {
+                            cachedUser.majorName = majorData.name;
+                        }
 
                         // 캐시 업데이트
                         cacheUserData(cachedUser);
@@ -168,7 +191,7 @@ export default function MajorSelection() {
                     }
                 }
 
-                router.push('/home');
+                router.push('/mypage');
             } else {
                 throw new Error(data.message || '전공 선택에 실패했습니다.');
             }
@@ -179,7 +202,6 @@ export default function MajorSelection() {
             setIsLoading(false);
         }
     };
-
     const handleSkip = () => {
         router.push('/home');
     };
@@ -248,6 +270,9 @@ export default function MajorSelection() {
                                                             : 'text-gray-700'
                                                     }`}>
                                                         {major.name}
+                                                        {initialMajor === major.id && (
+                                                            <span className="ml-2 text-xs text-indigo-500">(현재 선택)</span>
+                                                        )}
                                                     </span>
                                                 </div>
                                             </div>
