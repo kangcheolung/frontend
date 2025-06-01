@@ -183,7 +183,7 @@ export default function StudyFormPage() {
             const requestData = {
                 title: formData.title.trim(),
                 content: formData.content.trim(),
-                studyStatus: formData.studyStatus
+                status: formData.studyStatus
             };
 
             let url, method;
