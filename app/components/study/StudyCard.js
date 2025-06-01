@@ -59,15 +59,14 @@ export default function StudyCard({ study, getCategoryFromContent }) {
 
     // 스터디 상세 페이지로 이동
     const handleStudyClick = () => {
+        console.log('StudyCard 클릭:', study); // 디버깅용
+        console.log('스터디 ID:', study.id); // ID 확인용
         window.location.href = `/study/${study.id}`;
     };
 
     return (
-        <div
-            onClick={handleStudyClick}
-            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-indigo-200 overflow-hidden"
-        >
-            <div className="p-6">
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-100 hover:border-indigo-200 overflow-hidden flex flex-col h-full">
+            <div className="p-6 flex flex-col flex-grow">
                 {/* 상태 배지와 카테고리 */}
                 <div className="flex justify-between items-start mb-4">
                     <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusStyle(study.studyStatus)}`}>
@@ -84,7 +83,7 @@ export default function StudyCard({ study, getCategoryFromContent }) {
                 </h3>
 
                 {/* 내용 */}
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">
                     {study.content}
                 </p>
 
@@ -103,7 +102,7 @@ export default function StudyCard({ study, getCategoryFromContent }) {
                 </div>
 
                 {/* 태그 */}
-                <div className="flex flex-wrap gap-1 mb-4">
+                <div className="flex flex-wrap gap-1 mb-6">
                     {generateTags(study.title, study.content).map((tag, index) => (
                         <span
                             key={index}
@@ -114,12 +113,14 @@ export default function StudyCard({ study, getCategoryFromContent }) {
                     ))}
                 </div>
 
-                {/* 하단 정보 */}
-                <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>ID: {study.id}</span>
-                    <span className="text-indigo-600 font-medium">
+                {/* 자세히 보기 버튼 - 하단 고정 */}
+                <div className="mt-auto">
+                    <button
+                        onClick={handleStudyClick}
+                        className="w-full py-3 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+                    >
                         자세히 보기 →
-                    </span>
+                    </button>
                 </div>
             </div>
         </div>

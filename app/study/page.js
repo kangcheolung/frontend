@@ -1,4 +1,4 @@
-// app/study/page.js
+// app/study/page.js - API 엔드포인트 수정 버전
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,11 +26,13 @@ export default function StudyListPage() {
         { value: 'member', label: '참여자 많은순' }
     ];
 
-    // 스터디 목록 조회 API
+    // 스터디 목록 조회 API - 백엔드와 일치하도록 수정
     const fetchStudies = async () => {
         try {
             setLoading(true);
             setError(null);
+
+            console.log('API 호출 시작: /api/studies/list');
 
             const response = await fetch(`${serverUrl}/api/studies/list`, {
                 method: 'GET',
@@ -38,22 +40,31 @@ export default function StudyListPage() {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
-                credentials: 'include',
+                credentials: 'include', // 인증 쿠키 포함
             });
 
+            console.log('API 응답 상태:', response.status);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 401) {
+                    throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
             console.log('API Response:', data);
 
             if (data.code === 'SUCCESS') {
-                // 백엔드 응답 구조에 따라 data.data 또는 data.result 확인
+                // 백엔드 응답: CommonResponse<List<StudyPostListResponse>>
                 const studyData = data.data || data.result || [];
                 setStudies(studyData);
                 console.log('스터디 데이터:', studyData);
-                console.log('전체 응답:', data);
+
+                if (studyData.length > 0) {
+                    console.log('첫 번째 스터디 구조:', studyData[0]);
+                    console.log('ID 확인:', studyData[0].id);
+                }
             } else {
                 throw new Error(data.message || '스터디 목록을 불러오는데 실패했습니다.');
             }
@@ -66,7 +77,7 @@ export default function StudyListPage() {
         }
     };
 
-    // 스터디 검색 API
+    // 스터디 검색 API - 백엔드 엔드포인트와 일치
     const searchStudies = async (keyword) => {
         if (!keyword.trim()) {
             await fetchStudies();
@@ -77,6 +88,8 @@ export default function StudyListPage() {
             setLoading(true);
             setError(null);
 
+            console.log('검색 API 호출:', keyword);
+
             const response = await fetch(`${serverUrl}/api/studies/search?keyword=${encodeURIComponent(keyword)}`, {
                 method: 'GET',
                 headers: {
@@ -86,19 +99,22 @@ export default function StudyListPage() {
                 credentials: 'include',
             });
 
+            console.log('검색 API 응답 상태:', response.status);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 401) {
+                    throw new Error('로그인이 필요합니다. 다시 로그인해주세요.');
+                }
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
-            console.log('Search API Response:', data);
+            console.log('검색 API Response:', data);
 
             if (data.code === 'SUCCESS') {
-                // 백엔드 응답 구조에 따라 data.data 또는 data.result 확인
                 const studyData = data.data || data.result || [];
                 setStudies(studyData);
                 console.log('검색 결과:', studyData);
-                console.log('전체 검색 응답:', data);
             } else {
                 throw new Error(data.message || '스터디 검색에 실패했습니다.');
             }
@@ -142,6 +158,15 @@ export default function StudyListPage() {
     // 필터링 및 정렬 로직
     const getFilteredAndSortedStudies = () => {
         let filtered = [...studies];
+
+        // 검색 키워드 필터 (클라이언트 사이드)
+        if (searchKeyword.trim()) {
+            const keyword = searchKeyword.toLowerCase();
+            filtered = filtered.filter(study =>
+                study.title?.toLowerCase().includes(keyword) ||
+                study.content?.toLowerCase().includes(keyword)
+            );
+        }
 
         // 카테고리 필터
         if (selectedCategory !== '전체') {
@@ -190,6 +215,20 @@ export default function StudyListPage() {
                     sortOptions={sortOptions}
                     studyCount={filteredStudies.length}
                 />
+
+                {/* 디버그 정보 */}
+                <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
+                    <p><strong>총 스터디 수:</strong> {studies.length}</p>
+                    <p><strong>필터링된 스터디 수:</strong> {filteredStudies.length}</p>
+                    <p><strong>API URL:</strong> {serverUrl}/api/studies/list</p>
+                    <p><strong>검색 키워드:</strong> {searchKeyword || '없음'}</p>
+                    {studies.length > 0 && (
+                        <>
+                            <p><strong>첫 스터디 ID:</strong> {studies[0]?.id}</p>
+                            <p><strong>첫 스터디 제목:</strong> {studies[0]?.title}</p>
+                        </>
+                    )}
+                </div>
 
                 {/* 에러 상태 */}
                 {error && (

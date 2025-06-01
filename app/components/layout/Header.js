@@ -16,22 +16,30 @@ export default function Header({ userData, isLoading }) {
                     </Link>
                 </div>
 
-                <nav className="flex items-center space-x-4">
+                <nav className="flex items-center space-x-6">
                     <Link
                         href="/study"
-                        className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-200"
+                        className="text-gray-700 hover:text-indigo-600 font-medium transition-colors duration-200"
                     >
                         스터디 찾기
                     </Link>
 
-                    {/* 로그인된 사용자만 스터디 생성 버튼 표시 */}
+                    {/* 로그인된 사용자만 표시되는 링크들 */}
                     {userData && (
-                        <Link
-                            href="/study/create"
-                            className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-medium transition-colors duration-200"
-                        >
-                            스터디 만들기
-                        </Link>
+                        <>
+                            <Link
+                                href="/my-studies"
+                                className="text-gray-700 hover:text-indigo-600 font-medium transition-colors duration-200"
+                            >
+                                내 스터디
+                            </Link>
+                            <Link
+                                href="/study/create"
+                                className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-medium transition-colors duration-200"
+                            >
+                                스터디 만들기
+                            </Link>
+                        </>
                     )}
 
                     <div className="flex items-center">

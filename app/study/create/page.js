@@ -34,8 +34,9 @@ export default function StudyFormPage() {
     // userCamInfoId 가져오기
     const getUserCamInfoId = () => {
         const user = getCurrentUser();
-        if (user?.userCamInfo?.id) {
-            return user.userCamInfo.id;
+        console.log(`현재 사용자 정보: ${JSON.stringify(user)}`);
+        if (user?.userCamInfoId) {
+            return user.userCamInfoId;
         }
         return 9; // 기본값
     };
@@ -402,17 +403,6 @@ export default function StudyFormPage() {
                             </button>
                         </div>
                     </form>
-                </div>
-
-                {/* 디버그 정보 */}
-                <div className="mt-8 bg-gray-50 p-4 rounded text-xs">
-                    <p><strong>모드:</strong> {isEditMode ? `수정 (ID: ${editId})` : '생성'}</p>
-                    <p><strong>현재 사용자:</strong> {getCurrentUser()?.name || '비로그인'}</p>
-                    <p><strong>User Cam Info ID:</strong> {getUserCamInfoId()}</p>
-                    <p><strong>API URL:</strong> {serverUrl}/api/studies/{isEditMode ? 'update' : 'create'}</p>
-                    {isEditMode && (
-                        <p><strong>변경사항 있음:</strong> {hasChanges() ? 'YES' : 'NO'}</p>
-                    )}
                 </div>
             </div>
         </Layout>

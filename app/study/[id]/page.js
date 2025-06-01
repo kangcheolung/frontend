@@ -24,12 +24,33 @@ export default function StudyDetailPage() {
         return cachedUser;
     };
 
-    // userCamInfoId 가져오기
+    // userCamInfoId 가져오기 - 통일된 방식
     const getUserCamInfoId = (user) => {
-        if (user?.userCamInfo?.id) {
-            return user.userCamInfo.id;
+        if (!user) {
+            console.log('사용자 정보가 없습니다.');
+            return 9; // 기본값
         }
-        return 9; // 기본값
+
+        // 여러 가능한 경로를 시도
+        let userCamInfoId = null;
+
+        // 첫 번째 시도: 직접 userCamInfoId 필드
+        if (user.userCamInfoId) {
+            userCamInfoId = user.userCamInfoId;
+        }
+        // 두 번째 시도: userCamInfo.id 경로
+        else if (user.userCamInfo?.id) {
+            userCamInfoId = user.userCamInfo.id;
+        }
+
+        console.log('getUserCamInfoId 결과:', {
+            user: user,
+            userCamInfoId: userCamInfoId,
+            directPath: user.userCamInfoId,
+            nestedPath: user.userCamInfo?.id
+        });
+
+        return userCamInfoId || 9; // 기본값
     };
 
     useEffect(() => {
@@ -68,6 +89,7 @@ export default function StudyDetailPage() {
             if (data.code === 'SUCCESS') {
                 const studyData = data.data || data.result;
                 setStudy(studyData);
+                console.log('스터디 데이터:', studyData);
             } else {
                 throw new Error(data.message || 'API 응답 오류');
             }
@@ -83,17 +105,33 @@ export default function StudyDetailPage() {
     const isStudyCreator = () => {
         if (!currentUser || !study) return false;
 
-        // 스터디 작성자의 userCamInfoId와 현재 사용자의 userCamInfoId 비교
         const currentUserCamInfoId = getUserCamInfoId(currentUser);
-        const studyCreatorId = study.author?.id || study.userCamInfoId;
 
-        console.log('권한 체크:', {
-            currentUserCamInfoId,
-            studyCreatorId,
-            isCreator: currentUserCamInfoId === studyCreatorId
+        // 스터디 작성자 ID를 여러 경로에서 확인
+        const studyCreatorId = study.author?.userCamInfoId ||
+            study.author?.id ||
+            study.userCamInfoId;
+
+        console.log('권한 체크 상세:', {
+            currentUser: currentUser,
+            currentUserCamInfoId: currentUserCamInfoId,
+            study: study,
+            studyAuthor: study.author,
+            studyCreatorId: studyCreatorId,
+            'study.author?.userCamInfoId': study.author?.userCamInfoId,
+            'study.author?.id': study.author?.id,
+            'study.userCamInfoId': study.userCamInfoId,
+            isCreator: String(currentUserCamInfoId) === String(studyCreatorId),
+            typeCheck: {
+                currentType: typeof currentUserCamInfoId,
+                studyType: typeof studyCreatorId,
+                currentValue: currentUserCamInfoId,
+                studyValue: studyCreatorId
+            }
         });
 
-        return currentUserCamInfoId === studyCreatorId;
+        // 문자열로 변환해서 비교 (타입 불일치 방지)
+        return String(currentUserCamInfoId) === String(studyCreatorId);
     };
 
     const isAlreadyMember = () => {
@@ -103,7 +141,7 @@ export default function StudyDetailPage() {
 
         // 스터디 멤버 목록에서 현재 사용자 확인
         const isMember = study.members.some(member =>
-            member.userCamInfoId === currentUserCamInfoId
+            String(member.userCamInfoId) === String(currentUserCamInfoId)
         );
 
         console.log('멤버 체크:', {
@@ -119,6 +157,7 @@ export default function StudyDetailPage() {
         return study &&
             study.studyStatus === 'RECRUITING' &&
             !isAlreadyMember() &&
+            !isStudyCreator() && // 스터디 생성자는 신청할 수 없음
             currentUser; // 로그인한 사용자만
     };
 
@@ -126,13 +165,64 @@ export default function StudyDetailPage() {
         router.back();
     };
 
-    const handleApplyStudy = () => {
+    const handleApplyStudy = async () => {
         if (!currentUser) {
             alert('로그인이 필요합니다.');
             return;
         }
-        // TODO: 스터디 신청 API 구현
-        alert('스터디 신청 기능은 준비중입니다.');
+
+        if (!canApplyToStudy()) {
+            alert('신청할 수 없는 스터디입니다.');
+            return;
+        }
+
+        // 신청 메시지 입력받기
+        const applyMessage = prompt('신청 메시지를 입력해주세요 (선택사항):', '안녕하세요! 스터디에 참여하고 싶습니다.');
+
+        // 취소한 경우
+        if (applyMessage === null) {
+            return;
+        }
+
+        try {
+            const userCamInfoId = getUserCamInfoId(currentUser);
+            console.log('스터디 신청 요청:', { studyId, userCamInfoId, applyMessage });
+
+            const requestData = {
+                studyPostId: parseInt(studyId),
+                applyMessage: applyMessage || '' // 빈 문자열로 기본값 설정
+            };
+
+            const response = await fetch(
+                `${serverUrl}/api/study-members/apply?userCamInfoId=${userCamInfoId}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(requestData)
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('스터디 신청 응답:', data);
+
+            if (data.code === 'SUCCESS') {
+                alert('스터디 신청이 완료되었습니다!\n스터디 리더의 승인을 기다려주세요.');
+                // 페이지 새로고침으로 상태 업데이트
+                await fetchStudyDetail(currentUser);
+            } else {
+                throw new Error(data.message || '스터디 신청에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('스터디 신청 실패:', error);
+            alert(`스터디 신청에 실패했습니다: ${error.message}`);
+        }
     };
 
     const handleEditStudy = () => {
@@ -200,7 +290,7 @@ export default function StudyDetailPage() {
                         <p className="text-red-600 mb-4">{error}</p>
                         <div className="flex space-x-3">
                             <button
-                                onClick={fetchStudyDetail}
+                                onClick={() => fetchStudyDetail(currentUser)}
                                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                             >
                                 다시 시도
@@ -305,26 +395,15 @@ export default function StudyDetailPage() {
 
                     {/* 액션 버튼들 - 권한에 따라 조건부 표시 */}
                     <div className="mt-6 flex flex-wrap gap-3">
-                        {/* 신청하기 버튼 - 모집중이고, 멤버가 아니고, 로그인한 경우 */}
-                        {canApplyToStudy() && (
-                            <button
-                                onClick={handleApplyStudy}
-                                className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-                            >
-                                신청하기
-                            </button>
-                        )}
-
-                        {/* 이미 멤버인 경우 */}
-                        {isAlreadyMember() && (
-                            <div className="px-6 py-2 bg-green-100 text-green-800 rounded border border-green-200">
-                                참여중인 스터디
-                            </div>
-                        )}
-
-                        {/* 수정/삭제 버튼 - 스터디 생성자만 */}
+                        {/* 수정/삭제/관리 버튼 - 스터디 생성자만 (최우선) */}
                         {isStudyCreator() && (
                             <>
+                                <button
+                                    onClick={() => router.push(`/study/${studyId}/manage`)}
+                                    className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                                >
+                                    스터디 관리
+                                </button>
                                 <button
                                     onClick={handleEditStudy}
                                     className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
@@ -340,6 +419,23 @@ export default function StudyDetailPage() {
                             </>
                         )}
 
+                        {/* 이미 멤버인 경우 */}
+                        {!isStudyCreator() && isAlreadyMember() && (
+                            <div className="px-6 py-2 bg-green-100 text-green-800 rounded border border-green-200">
+                                참여중인 스터디
+                            </div>
+                        )}
+
+                        {/* 신청하기 버튼 - 모집중이고, 멤버가 아니고, 생성자가 아니고, 로그인한 경우 */}
+                        {canApplyToStudy() && (
+                            <button
+                                onClick={handleApplyStudy}
+                                className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                            >
+                                신청하기
+                            </button>
+                        )}
+
                         {/* 로그인하지 않은 경우 */}
                         {!currentUser && study?.studyStatus === 'RECRUITING' && (
                             <div className="px-6 py-2 bg-yellow-100 text-yellow-800 rounded border border-yellow-200">
@@ -348,7 +444,7 @@ export default function StudyDetailPage() {
                         )}
 
                         {/* 모집 완료된 경우 */}
-                        {study?.studyStatus !== 'RECRUITING' && !isAlreadyMember() && (
+                        {study?.studyStatus !== 'RECRUITING' && !isAlreadyMember() && !isStudyCreator() && (
                             <div className="px-6 py-2 bg-gray-100 text-gray-600 rounded border border-gray-200">
                                 모집이 마감되었습니다
                             </div>
@@ -389,17 +485,6 @@ export default function StudyDetailPage() {
                             </div>
                         </div>
                     )}
-                </div>
-
-                {/* 디버그 정보 */}
-                <div className="mt-8 bg-gray-50 p-4 rounded text-xs">
-                    <p><strong>스터디 ID:</strong> {studyId}</p>
-                    <p><strong>User Cam Info ID:</strong> {getUserCamInfoId(currentUser)}</p>
-                    <p><strong>현재 사용자:</strong> {currentUser ? currentUser.name || '로그인됨' : '비로그인'}</p>
-                    <p><strong>스터디 생성자:</strong> {isStudyCreator() ? 'YES' : 'NO'}</p>
-                    <p><strong>이미 멤버:</strong> {isAlreadyMember() ? 'YES' : 'NO'}</p>
-                    <p><strong>신청 가능:</strong> {canApplyToStudy() ? 'YES' : 'NO'}</p>
-                    <p><strong>API URL:</strong> {serverUrl}/api/studies/detail</p>
                 </div>
             </div>
         </Layout>

@@ -88,6 +88,7 @@ export default function Home() {
             const userData = await userResponse.json();
 
             if (userData.code === 'SUCCESS' && userData.result) {
+                console.log('User data fetched:', userData.result);
                 // 사용자 정보 캐시에 저장
                 cacheUserData(userData.result);
                 console.log('User data fetched and cached successfully');
