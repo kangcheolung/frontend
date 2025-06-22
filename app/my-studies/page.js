@@ -16,7 +16,8 @@ import {
     Settings,
     Plus,
     UserCheck,
-    UserX
+    UserX,
+    Trash2
 } from 'lucide-react';
 
 export default function MyStudiesPage() {
@@ -49,20 +50,118 @@ export default function MyStudiesPage() {
         }
     }, []);
 
-    // 내 스터디 목록 가져오기 (API가 있다고 가정)
+    // 내 스터디 목록 가져오기
     const fetchMyStudies = async (user) => {
         try {
             setLoading(true);
             setError(null);
 
             const userCamInfoId = getUserCamInfoId(user);
+            console.log('🔍 현재 사용자 정보:', { user, userCamInfoId });
 
-            // 실제로는 백엔드에서 사용자별 스터디 목록을 가져와야 합니다
-            // 여기서는 전체 스터디 목록을 가져와서 필터링하는 방식으로 구현
+            // 백엔드의 my-studies API 호출
             const response = await fetch(
-                `${serverUrl}/api/studies?userCamInfoId=${userCamInfoId}`,
+                `${serverUrl}/api/study-members/my-studies?userCamInfoId=${userCamInfoId}`,
                 {
                     method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                }
+            );
+
+            console.log('📡 API 응답 상태:', response.status, response.statusText);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('📦 전체 응답 데이터:', data);
+
+            if (data.code === 'SUCCESS') {
+                const studies = data.data || data.result || [];
+                console.log('📚 받아온 스터디 목록:', studies);
+                console.log('📊 스터디 개수:', studies.length);
+
+                // MyStudyResponse 형식에 맞게 데이터 변환
+                const formattedStudies = studies.map((study, index) => {
+                    console.log(`🔹 스터디 ${index + 1} 원본 데이터:`, study);
+
+                    const formatted = {
+                        id: study.studyPostId,
+                        title: study.studyTitle,
+                        content: study.studyContent,
+                        studyStatus: study.studyStatus,
+                        createdAt: study.studyCreatedAt,
+                        membershipId: study.membershipId,
+                        myRole: study.myRole,
+                        myStatus: study.myStatus,
+                        joinedAt: study.joinedAt,
+                        authorName: study.authorName,
+                        authorNickname: study.authorNickname,
+                        // 내가 작성자인지 확인 (LEADER 역할이면 작성자)
+                        isCreator: study.myRole === 'LEADER',
+                        // 승인된 멤버인지 확인
+                        isJoined: study.myStatus === 'APPROVED',
+                        // 대기 중인지 확인
+                        isPending: study.myStatus === 'PENDING',
+                        // 거절되었는지 확인
+                        isRejected: study.myStatus === 'REJECTED'
+                    };
+
+                    console.log(`🔸 스터디 ${index + 1} 변환된 데이터:`, formatted);
+                    return formatted;
+                });
+
+                console.log('✅ 최종 변환된 스터디 목록:', formattedStudies);
+
+                // 분류별 확인
+                const created = formattedStudies.filter(s => s.isCreator);
+                const joined = formattedStudies.filter(s => s.isJoined && !s.isCreator);
+                const pending = formattedStudies.filter(s => s.isPending);
+
+                console.log('📌 분류 결과:', {
+                    '내가 만든 스터디': created,
+                    '참여 중인 스터디': joined,
+                    '신청 대기 중': pending
+                });
+
+                setMyStudies(formattedStudies);
+            } else {
+                throw new Error(data.message || 'API 응답 오류');
+            }
+        } catch (error) {
+            console.error('❌ 스터디 목록 조회 실패:', error);
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 날짜 포맷팅
+    const formatDate = (dateString) => {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR');
+        } catch (error) {
+            return dateString;
+        }
+    };
+
+    // 스터디 탈퇴
+    const handleLeaveStudy = async (membershipId, studyTitle) => {
+        if (!confirm(`정말로 "${studyTitle}" 스터디에서 탈퇴하시겠습니까?`)) {
+            return;
+        }
+
+        try {
+            const userCamInfoId = getUserCamInfoId(currentUser);
+            const response = await fetch(
+                `${serverUrl}/api/study-members/leave?studyMemberId=${membershipId}&userCamInfoId=${userCamInfoId}`,
+                {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -77,66 +176,89 @@ export default function MyStudiesPage() {
             const data = await response.json();
 
             if (data.code === 'SUCCESS') {
-                const allStudies = data.data || data.result || [];
-
-                // 내가 만든 스터디와 참여한 스터디 분류
-                const studiesWithMyInfo = await Promise.all(
-                    allStudies.map(async (study) => {
-                        // 각 스터디의 상세 정보를 가져와서 멤버 정보 확인
-                        try {
-                            const detailResponse = await fetch(
-                                `${serverUrl}/api/studies/detail?studyPostId=${study.id}&userCamInfoId=${userCamInfoId}`,
-                                {
-                                    method: 'GET',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    credentials: 'include',
-                                }
-                            );
-
-                            if (detailResponse.ok) {
-                                const detailData = await detailResponse.json();
-                                if (detailData.code === 'SUCCESS') {
-                                    const studyDetail = detailData.data || detailData.result;
-
-                                    // 내가 작성자인지 확인
-                                    const isCreator = String(userCamInfoId) === String(
-                                        studyDetail.author?.userCamInfoId ||
-                                        studyDetail.author?.id ||
-                                        studyDetail.userCamInfoId
-                                    );
-
-                                    // 내가 멤버인지 확인
-                                    const myMembership = studyDetail.members?.find(member =>
-                                        String(member.userCamInfoId) === String(userCamInfoId)
-                                    );
-
-                                    return {
-                                        ...study,
-                                        members: studyDetail.members || [],
-                                        isCreator,
-                                        myMembership,
-                                        isJoined: !!myMembership && myMembership.memberStatus === 'APPROVED',
-                                        isPending: !!myMembership && myMembership.memberStatus === 'PENDING'
-                                    };
-                                }
-                            }
-                            return { ...study, isCreator: false, myMembership: null, isJoined: false, isPending: false };
-                        } catch (error) {
-                            console.error(`스터디 ${study.id} 상세 정보 조회 실패:`, error);
-                            return { ...study, isCreator: false, myMembership: null, isJoined: false, isPending: false };
-                        }
-                    })
-                );
-
-                setMyStudies(studiesWithMyInfo);
+                alert('스터디에서 탈퇴했습니다.');
+                fetchMyStudies(currentUser); // 목록 새로고침
             } else {
-                throw new Error(data.message || 'API 응답 오류');
+                throw new Error(data.message || '탈퇴 실패');
             }
         } catch (error) {
-            console.error('스터디 목록 조회 실패:', error);
-            setError(error.message);
-        } finally {
-            setLoading(false);
+            console.error('스터디 탈퇴 실패:', error);
+            alert('스터디 탈퇴에 실패했습니다: ' + error.message);
+        }
+    };
+
+    // 스터디 신청 취소 (대기 중인 신청 취소)
+    const handleCancelApplication = async (membershipId, studyTitle) => {
+        if (!confirm(`"${studyTitle}" 스터디 신청을 취소하시겠습니까?`)) {
+            return;
+        }
+
+        try {
+            const userCamInfoId = getUserCamInfoId(currentUser);
+            // 신청 취소도 leave API를 사용
+            const response = await fetch(
+                `${serverUrl}/api/study-members/leave?studyMemberId=${membershipId}&userCamInfoId=${userCamInfoId}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.code === 'SUCCESS') {
+                alert('스터디 신청을 취소했습니다.');
+                fetchMyStudies(currentUser); // 목록 새로고침
+            } else {
+                throw new Error(data.message || '신청 취소 실패');
+            }
+        } catch (error) {
+            console.error('스터디 신청 취소 실패:', error);
+            alert('스터디 신청 취소에 실패했습니다: ' + error.message);
+        }
+    };
+
+    // 스터디 삭제 (내가 만든 스터디)
+    const handleDeleteStudy = async (studyId, studyTitle) => {
+        if (!confirm(`정말로 "${studyTitle}" 스터디를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+            return;
+        }
+
+        try {
+            const userCamInfoId = getUserCamInfoId(currentUser);
+            const response = await fetch(
+                `${serverUrl}/api/studies/delete?studyPostId=${studyId}&userCamInfoId=${userCamInfoId}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.code === 'SUCCESS') {
+                alert('스터디가 삭제되었습니다.');
+                fetchMyStudies(currentUser); // 목록 새로고침
+            } else {
+                throw new Error(data.message || '삭제 실패');
+            }
+        } catch (error) {
+            console.error('스터디 삭제 실패:', error);
+            alert('스터디 삭제에 실패했습니다: ' + error.message);
         }
     };
 
@@ -144,10 +266,13 @@ export default function MyStudiesPage() {
     const getFilteredStudies = () => {
         switch (activeTab) {
             case 'created':
+                // LEADER 역할인 스터디들
                 return myStudies.filter(study => study.isCreator);
             case 'joined':
+                // APPROVED 상태이면서 LEADER가 아닌 스터디들
                 return myStudies.filter(study => study.isJoined && !study.isCreator);
             case 'applied':
+                // PENDING 상태인 스터디들
                 return myStudies.filter(study => study.isPending);
             default:
                 return [];
@@ -176,16 +301,6 @@ export default function MyStudiesPage() {
             case 'IN_PROGRESS': return '진행중';
             case 'COMPLETED': return '완료';
             default: return '알 수 없음';
-        }
-    };
-
-    // 날짜 포맷팅
-    const formatDate = (dateString) => {
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('ko-KR');
-        } catch (error) {
-            return dateString;
         }
     };
 
@@ -382,6 +497,11 @@ export default function MyStudiesPage() {
                                                         승인 대기
                                                     </span>
                                                 )}
+                                                {study.isRejected && (
+                                                    <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                                                        거절됨
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                                                 {study.content}
@@ -389,11 +509,17 @@ export default function MyStudiesPage() {
                                             <div className="flex items-center text-sm text-gray-500 space-x-4">
                                                 <div className="flex items-center">
                                                     <Calendar className="w-4 h-4 mr-1" />
-                                                    <span>{formatDate(study.createdAt)}</span>
+                                                    <span>생성일: {formatDate(study.createdAt)}</span>
                                                 </div>
+                                                {study.joinedAt && !study.isCreator && (
+                                                    <div className="flex items-center">
+                                                        <UserCheck className="w-4 h-4 mr-1" />
+                                                        <span>가입일: {formatDate(study.joinedAt)}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center">
                                                     <Users className="w-4 h-4 mr-1" />
-                                                    <span>{study.members?.length || 0}명</span>
+                                                    <span>작성자: {study.authorNickname || study.authorName}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -409,16 +535,43 @@ export default function MyStudiesPage() {
                                                     <button
                                                         onClick={() => router.push(`/study/${study.id}/manage`)}
                                                         className="px-3 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                                                        title="스터디 관리"
                                                     >
                                                         <Settings className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => router.push(`/study/create?id=${study.id}`)}
                                                         className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                                                        title="스터디 수정"
                                                     >
                                                         <Edit className="w-4 h-4" />
                                                     </button>
+                                                    <button
+                                                        onClick={() => handleDeleteStudy(study.id, study.title)}
+                                                        className="px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                                                        title="스터디 삭제"
+                                                    >
+                                                        <XCircle className="w-4 h-4" />
+                                                    </button>
                                                 </>
+                                            )}
+                                            {study.isJoined && !study.isCreator && (
+                                                <button
+                                                    onClick={() => handleLeaveStudy(study.membershipId, study.title)}
+                                                    className="px-3 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                                                    title="스터디 탈퇴"
+                                                >
+                                                    <UserX className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {study.isPending && (
+                                                <button
+                                                    onClick={() => handleCancelApplication(study.membershipId, study.title)}
+                                                    className="px-3 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700"
+                                                    title="신청 취소"
+                                                >
+                                                    <XCircle className="w-4 h-4" />
+                                                </button>
                                             )}
                                         </div>
                                     </div>

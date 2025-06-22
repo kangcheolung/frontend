@@ -160,10 +160,6 @@ export default function MyPage() {
                                             <div className="w-24 text-gray-500">이름</div>
                                             <div className="font-medium text-gray-900">{userData.name || '-'}</div>
                                         </div>
-                                        <div className="flex">
-                                            <div className="w-24 text-gray-500">닉네임</div>
-                                            <div className="font-medium text-gray-900">{userData.nickname || '-'}</div>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -222,15 +218,15 @@ export default function MyPage() {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                                                 <div className="text-3xl font-bold text-indigo-600">
-                                                    {userData.participatingStudies || 0}
+                                                    {userData.joinedStudyCount || 0}
                                                 </div>
                                                 <div className="text-gray-500 text-sm">참여중인 스터디</div>
                                             </div>
                                             <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                                                 <div className="text-3xl font-bold text-purple-600">
-                                                    {userData.completedStudies || 0}
+                                                    {userData.pendingStudyCount || 0}
                                                 </div>
-                                                <div className="text-gray-500 text-sm">완료한 스터디</div>
+                                                <div className="text-gray-500 text-sm">승인 대기 스터디</div>
                                             </div>
                                         </div>
                                     </div>

@@ -11,7 +11,8 @@ export default function StudyManagePage() {
     const params = useParams();
     const router = useRouter();
     const [study, setStudy] = useState(null);
-    const [members, setMembers] = useState([]);
+    const [applicants, setApplicants] = useState([]); // 신청자 목록
+    const [members, setMembers] = useState([]); // 승인된 멤버 목록
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
@@ -36,56 +37,98 @@ export default function StudyManagePage() {
     useEffect(() => {
         const user = getCurrentUser();
         if (studyId && user) {
-            fetchStudyDetail(user);
+            fetchStudyData(user);
         }
     }, [studyId]);
 
-    // 스터디 상세 정보 가져오기
-    const fetchStudyDetail = async (user) => {
+    // 스터디 데이터 가져오기
+    const fetchStudyData = async (user) => {
         try {
             setLoading(true);
             setError(null);
 
             const userCamInfoId = getUserCamInfoId(user);
 
-            const response = await fetch(
-                `${serverUrl}/api/studies/detail?studyPostId=${studyId}&userCamInfoId=${userCamInfoId}`,
-                {
+            // 병렬로 데이터 가져오기
+            const [studyResponse, applicantsResponse, membersResponse] = await Promise.all([
+                // 스터디 상세 정보
+                fetch(`${serverUrl}/api/studies/detail?studyPostId=${studyId}&userCamInfoId=${userCamInfoId}`, {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                }
-            );
+                }),
+                // 신청자 목록
+                fetch(`${serverUrl}/api/study-members/applicants?studyPostId=${studyId}&userCamInfoId=${userCamInfoId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                }),
+                // 전체 멤버 목록
+                fetch(`${serverUrl}/api/study-members/list?studyPostId=${studyId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                })
+            ]);
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            // 응답 확인
+            if (!studyResponse.ok) throw new Error(`스터디 정보 조회 실패: ${studyResponse.status}`);
+            if (!applicantsResponse.ok) throw new Error(`신청자 조회 실패: ${applicantsResponse.status}`);
+            if (!membersResponse.ok) throw new Error(`멤버 조회 실패: ${membersResponse.status}`);
 
-            const data = await response.json();
+            const studyData = await studyResponse.json();
+            const applicantsData = await applicantsResponse.json();
+            const membersData = await membersResponse.json();
 
-            if (data.code === 'SUCCESS') {
-                const studyData = data.data || data.result;
-                setStudy(studyData);
-                setMembers(studyData.members || []);
+            console.log('📚 스터디 상세 정보:', studyData);
+            console.log('📋 신청자 목록:', applicantsData);
+            console.log('👥 전체 멤버 목록:', membersData);
+
+            if (studyData.code === 'SUCCESS') {
+                const studyInfo = studyData.data || studyData.result;
+                setStudy(studyInfo);
 
                 // 권한 체크 - 스터디 리더만 접근 가능
                 const currentUserCamInfoId = getUserCamInfoId(user);
-                const studyCreatorId = studyData.author?.userCamInfoId ||
-                    studyData.author?.id ||
-                    studyData.userCamInfoId;
+                const studyCreatorId = studyInfo.author?.userCamInfoId ||
+                    studyInfo.author?.id ||
+                    studyInfo.userCamInfoId;
+
+                console.log('🔐 권한 체크:', { currentUserCamInfoId, studyCreatorId });
 
                 if (String(currentUserCamInfoId) !== String(studyCreatorId)) {
-                    alert('스터디 리더만 접근할 수 있습니다.');
-                    router.push(`/study/${studyId}`);
-                    return;
+                    // 리더가 아닌 경우 리더 권한 체크
+                    const allMembers = membersData.data || membersData.result || [];
+                    const currentUserMember = allMembers.find(m =>
+                        String(m.userCamInfoId) === String(currentUserCamInfoId) &&
+                        m.memberRole === 'LEADER'
+                    );
+
+                    if (!currentUserMember) {
+                        alert('스터디 리더만 접근할 수 있습니다.');
+                        router.push(`/study/${studyId}`);
+                        return;
+                    }
                 }
-            } else {
-                throw new Error(data.message || 'API 응답 오류');
             }
+
+            // 신청자 목록 설정
+            if (applicantsData.code === 'SUCCESS') {
+                const applicantsList = applicantsData.data || applicantsData.result || [];
+                setApplicants(applicantsList);
+                console.log('✅ 신청자 수:', applicantsList.length);
+            }
+
+            // 멤버 목록 설정 (승인된 멤버만 필터링)
+            if (membersData.code === 'SUCCESS') {
+                const allMembers = membersData.data || membersData.result || [];
+                const approvedMembers = allMembers.filter(member => member.memberStatus === 'APPROVED');
+                setMembers(approvedMembers);
+                console.log('✅ 승인된 멤버 수:', approvedMembers.length);
+            }
+
         } catch (error) {
-            console.error('스터디 정보 조회 실패:', error);
+            console.error('❌ 데이터 조회 실패:', error);
             setError(error.message);
         } finally {
             setLoading(false);
@@ -93,8 +136,8 @@ export default function StudyManagePage() {
     };
 
     // 멤버 승인
-    const handleApproveMember = async (studyMemberId) => {
-        if (!confirm('이 멤버를 승인하시겠습니까?')) {
+    const handleApproveMember = async (studyMemberId, memberName) => {
+        if (!confirm(`${memberName}님을 승인하시겠습니까?`)) {
             return;
         }
 
@@ -119,8 +162,8 @@ export default function StudyManagePage() {
             const data = await response.json();
 
             if (data.code === 'SUCCESS') {
-                alert('멤버가 승인되었습니다.');
-                await fetchStudyDetail(currentUser);
+                alert(`${memberName}님이 승인되었습니다.`);
+                await fetchStudyData(currentUser);
             } else {
                 throw new Error(data.message || '멤버 승인에 실패했습니다.');
             }
@@ -131,8 +174,8 @@ export default function StudyManagePage() {
     };
 
     // 멤버 거부
-    const handleRejectMember = async (studyMemberId) => {
-        if (!confirm('이 멤버를 거부하시겠습니까?')) {
+    const handleRejectMember = async (studyMemberId, memberName) => {
+        if (!confirm(`${memberName}님의 신청을 거부하시겠습니까?`)) {
             return;
         }
 
@@ -157,8 +200,8 @@ export default function StudyManagePage() {
             const data = await response.json();
 
             if (data.code === 'SUCCESS') {
-                alert('멤버가 거부되었습니다.');
-                await fetchStudyDetail(currentUser);
+                alert(`${memberName}님의 신청이 거부되었습니다.`);
+                await fetchStudyData(currentUser);
             } else {
                 throw new Error(data.message || '멤버 거부에 실패했습니다.');
             }
@@ -169,8 +212,8 @@ export default function StudyManagePage() {
     };
 
     // 리더 변경
-    const handleChangeLeader = async (newLeaderId) => {
-        if (!confirm('정말로 리더를 변경하시겠습니까?\n리더 권한이 해당 멤버에게 넘어갑니다.')) {
+    const handleChangeLeader = async (targetMemberId, memberName) => {
+        if (!confirm(`정말로 ${memberName}님에게 리더 권한을 넘기시겠습니까?\n이 작업을 수행하면 더 이상 스터디를 관리할 수 없습니다.`)) {
             return;
         }
 
@@ -178,8 +221,14 @@ export default function StudyManagePage() {
             const userCamInfoId = getUserCamInfoId(currentUser);
             const requestData = {
                 studyPostId: parseInt(studyId),
-                newLeaderId: newLeaderId
+                newLeaderId: targetMemberId  // StudyMember의 ID를 전달
             };
+
+            console.log('🔄 리더 변경 요청:', {
+                currentLeaderUserCamInfoId: userCamInfoId,
+                newLeaderMemberId: targetMemberId,
+                studyPostId: studyId
+            });
 
             const response = await fetch(
                 `${serverUrl}/api/study-members/change-leader?userCamInfoId=${userCamInfoId}`,
@@ -200,7 +249,7 @@ export default function StudyManagePage() {
             const data = await response.json();
 
             if (data.code === 'SUCCESS') {
-                alert('리더가 변경되었습니다.');
+                alert(`${memberName}님이 새로운 리더가 되었습니다.`);
                 router.push(`/study/${studyId}`);
             } else {
                 throw new Error(data.message || '리더 변경에 실패했습니다.');
@@ -215,8 +264,21 @@ export default function StudyManagePage() {
         router.push(`/study/${studyId}`);
     };
 
-    const pendingMembers = members.filter(member => member.memberStatus === 'PENDING');
-    const approvedMembers = members.filter(member => member.memberStatus === 'APPROVED');
+    // 날짜 포맷팅
+    const formatDate = (dateString) => {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return dateString;
+        }
+    };
 
     if (loading) {
         return (
@@ -312,7 +374,7 @@ export default function StudyManagePage() {
                             >
                                 <div className="flex items-center">
                                     <Clock className="w-4 h-4 mr-2" />
-                                    신청 대기 ({pendingMembers.length})
+                                    신청 대기 ({applicants.length})
                                 </div>
                             </button>
                             <button
@@ -325,7 +387,7 @@ export default function StudyManagePage() {
                             >
                                 <div className="flex items-center">
                                     <Users className="w-4 h-4 mr-2" />
-                                    승인된 멤버 ({approvedMembers.length})
+                                    승인된 멤버 ({members.length})
                                 </div>
                             </button>
                         </nav>
@@ -337,14 +399,14 @@ export default function StudyManagePage() {
                     {activeTab === 'pending' && (
                         <div className="p-6">
                             <h2 className="text-lg font-semibold mb-4">신청 대기 중인 멤버</h2>
-                            {pendingMembers.length === 0 ? (
+                            {applicants.length === 0 ? (
                                 <div className="text-center py-12 text-gray-500">
                                     <Clock className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                                     <p>신청 대기 중인 멤버가 없습니다.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {pendingMembers.map((member) => (
+                                    {applicants.map((member) => (
                                         <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                             <div className="flex-grow">
                                                 <div className="flex items-center mb-2">
@@ -357,20 +419,20 @@ export default function StudyManagePage() {
                                                     <p>{member.campusName}</p>
                                                     {member.majorName && <p>{member.majorName}</p>}
                                                     <p className="text-xs text-gray-500 mt-1">
-                                                        신청일: {new Date(member.createdAt).toLocaleString('ko-KR')}
+                                                        신청일: {formatDate(member.createdAt)}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex space-x-2 ml-4">
                                                 <button
-                                                    onClick={() => handleApproveMember(member.id)}
+                                                    onClick={() => handleApproveMember(member.id, member.userName)}
                                                     className="flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
                                                 >
                                                     <CheckCircle className="w-4 h-4 mr-1" />
                                                     승인
                                                 </button>
                                                 <button
-                                                    onClick={() => handleRejectMember(member.id)}
+                                                    onClick={() => handleRejectMember(member.id, member.userName)}
                                                     className="flex items-center px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
                                                 >
                                                     <XCircle className="w-4 h-4 mr-1" />
@@ -387,48 +449,57 @@ export default function StudyManagePage() {
                     {activeTab === 'approved' && (
                         <div className="p-6">
                             <h2 className="text-lg font-semibold mb-4">승인된 멤버</h2>
-                            {approvedMembers.length === 0 ? (
+                            {members.length === 0 ? (
                                 <div className="text-center py-12 text-gray-500">
                                     <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                                     <p>승인된 멤버가 없습니다.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {approvedMembers.map((member) => (
-                                        <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                            <div className="flex-grow">
-                                                <div className="flex items-center mb-2">
-                                                    <h3 className="font-medium text-gray-900">{member.userName}</h3>
-                                                    {member.userNickname && (
-                                                        <span className="ml-2 text-sm text-gray-500">({member.userNickname})</span>
-                                                    )}
-                                                    {member.memberRole === 'LEADER' && (
-                                                        <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                                                            리더
-                                                        </span>
+                                    {members.map((member) => {
+                                        const isCurrentUser = String(member.userCamInfoId) === String(getUserCamInfoId(currentUser));
+                                        return (
+                                            <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                                <div className="flex-grow">
+                                                    <div className="flex items-center mb-2">
+                                                        <h3 className="font-medium text-gray-900">{member.userName}</h3>
+                                                        {member.userNickname && (
+                                                            <span className="ml-2 text-sm text-gray-500">({member.userNickname})</span>
+                                                        )}
+                                                        {member.memberRole === 'LEADER' && (
+                                                            <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                                                리더
+                                                            </span>
+                                                        )}
+                                                        {isCurrentUser && (
+                                                            <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                                                나
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-gray-600">
+                                                        <p>{member.campusName}</p>
+                                                        {member.majorName && <p>{member.majorName}</p>}
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            가입일: {formatDate(member.createdAt)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex space-x-2 ml-4">
+                                                    {/* 리더가 아니고, 본인이 아닌 경우에만 리더 변경 버튼 표시 */}
+                                                    {member.memberRole !== 'LEADER' && !isCurrentUser && (
+                                                        <button
+                                                            onClick={() => handleChangeLeader(member.id, member.userName)}
+                                                            className="flex items-center px-3 py-2 border border-purple-300 text-purple-700 text-sm rounded hover:bg-purple-50 transition-colors"
+                                                        >
+                                                            <Crown className="w-4 h-4 mr-1" />
+                                                            리더 변경
+                                                        </button>
                                                     )}
                                                 </div>
-                                                <div className="text-sm text-gray-600">
-                                                    <p>{member.campusName}</p>
-                                                    {member.majorName && <p>{member.majorName}</p>}
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        가입일: {new Date(member.createdAt).toLocaleString('ko-KR')}
-                                                    </p>
-                                                </div>
                                             </div>
-                                            <div className="flex space-x-2 ml-4">
-                                                {member.memberRole !== 'LEADER' && (
-                                                    <button
-                                                        onClick={() => handleChangeLeader(member.userCamInfoId)}
-                                                        className="flex items-center px-3 py-2 border border-purple-300 text-purple-700 text-sm rounded hover:bg-purple-50 transition-colors"
-                                                    >
-                                                        <Crown className="w-4 h-4 mr-1" />
-                                                        리더 변경
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -442,7 +513,7 @@ export default function StudyManagePage() {
                             <Clock className="w-5 h-5 text-yellow-500 mr-2" />
                             <div>
                                 <p className="text-sm text-gray-600">신청 대기</p>
-                                <p className="text-2xl font-bold text-gray-900">{pendingMembers.length}</p>
+                                <p className="text-2xl font-bold text-gray-900">{applicants.length}</p>
                             </div>
                         </div>
                     </div>
@@ -451,7 +522,7 @@ export default function StudyManagePage() {
                             <Users className="w-5 h-5 text-green-500 mr-2" />
                             <div>
                                 <p className="text-sm text-gray-600">승인된 멤버</p>
-                                <p className="text-2xl font-bold text-gray-900">{approvedMembers.length}</p>
+                                <p className="text-2xl font-bold text-gray-900">{members.length}</p>
                             </div>
                         </div>
                     </div>
@@ -460,7 +531,7 @@ export default function StudyManagePage() {
                             <Users className="w-5 h-5 text-blue-500 mr-2" />
                             <div>
                                 <p className="text-sm text-gray-600">전체 멤버</p>
-                                <p className="text-2xl font-bold text-gray-900">{members.length}</p>
+                                <p className="text-2xl font-bold text-gray-900">{applicants.length + members.length}</p>
                             </div>
                         </div>
                     </div>

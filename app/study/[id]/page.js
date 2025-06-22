@@ -5,14 +5,20 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Layout } from '@/app/components/layout';
 import { getCachedUserData } from '@/app/services/userCache';
+import { MessageCircle, Edit2, Trash2, Send, X, Check } from 'lucide-react';
 
 export default function StudyDetailPage() {
     const params = useParams();
     const router = useRouter();
     const [study, setStudy] = useState(null);
+    const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    const [commentContent, setCommentContent] = useState('');
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [editingContent, setEditingContent] = useState('');
+    const [submittingComment, setSubmittingComment] = useState(false);
 
     const studyId = params.id;
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
@@ -57,6 +63,7 @@ export default function StudyDetailPage() {
         const user = getCurrentUser();
         if (studyId) {
             fetchStudyDetail(user);
+            fetchComments();
         }
     }, [studyId]);
 
@@ -98,6 +105,172 @@ export default function StudyDetailPage() {
             setError(error.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // 댓글 목록 가져오기
+    const fetchComments = async () => {
+        try {
+            const response = await fetch(
+                `${serverUrl}/api/studyComments/list?studyPostId=${studyId}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('댓글 목록:', data);
+
+            if (data.code === 'SUCCESS') {
+                setComments(data.data || data.result || []);
+            }
+        } catch (error) {
+            console.error('댓글 목록 조회 실패:', error);
+            // 댓글 로드 실패는 전체 페이지 에러로 처리하지 않음
+        }
+    };
+
+    // 댓글 작성
+    const handleSubmitComment = async () => {
+        if (!currentUser) {
+            alert('로그인이 필요합니다.');
+            return;
+        }
+
+        if (!commentContent.trim()) {
+            alert('댓글 내용을 입력해주세요.');
+            return;
+        }
+
+        try {
+            setSubmittingComment(true);
+            const userCamInfoId = getUserCamInfoId(currentUser);
+            const requestData = {
+                content: commentContent.trim(),
+                studyPostId: parseInt(studyId)
+            };
+
+            console.log('댓글 작성 요청:', requestData);
+
+            const response = await fetch(
+                `${serverUrl}/api/studyComments/create?userCamInfoId=${userCamInfoId}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(requestData)
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.code === 'SUCCESS') {
+                setCommentContent('');
+                fetchComments(); // 댓글 목록 새로고침
+            } else {
+                throw new Error(data.message || '댓글 작성 실패');
+            }
+        } catch (error) {
+            console.error('댓글 작성 실패:', error);
+            alert('댓글 작성에 실패했습니다: ' + error.message);
+        } finally {
+            setSubmittingComment(false);
+        }
+    };
+
+    // 댓글 수정
+    const handleUpdateComment = async (commentId) => {
+        if (!editingContent.trim()) {
+            alert('댓글 내용을 입력해주세요.');
+            return;
+        }
+
+        try {
+            const userCamInfoId = getUserCamInfoId(currentUser);
+            const requestData = {
+                content: editingContent.trim(),
+                studyPostId: parseInt(studyId)
+            };
+
+            const response = await fetch(
+                `${serverUrl}/api/studyComments/update?commentId=${commentId}&userCamInfoId=${userCamInfoId}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(requestData)
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.code === 'SUCCESS') {
+                setEditingCommentId(null);
+                setEditingContent('');
+                fetchComments(); // 댓글 목록 새로고침
+            } else {
+                throw new Error(data.message || '댓글 수정 실패');
+            }
+        } catch (error) {
+            console.error('댓글 수정 실패:', error);
+            alert('댓글 수정에 실패했습니다: ' + error.message);
+        }
+    };
+
+    // 댓글 삭제
+    const handleDeleteComment = async (commentId) => {
+        if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            const userCamInfoId = getUserCamInfoId(currentUser);
+
+            const response = await fetch(
+                `${serverUrl}/api/studyComments/delete?commentId=${commentId}&userCamInfoId=${userCamInfoId}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.code === 'SUCCESS') {
+                fetchComments(); // 댓글 목록 새로고침
+            } else {
+                throw new Error(data.message || '댓글 삭제 실패');
+            }
+        } catch (error) {
+            console.error('댓글 삭제 실패:', error);
+            alert('댓글 삭제에 실패했습니다: ' + error.message);
         }
     };
 
@@ -159,6 +332,12 @@ export default function StudyDetailPage() {
             !isAlreadyMember() &&
             !isStudyCreator() && // 스터디 생성자는 신청할 수 없음
             currentUser; // 로그인한 사용자만
+    };
+
+    const isCommentAuthor = (comment) => {
+        if (!currentUser) return false;
+        const currentUserCamInfoId = getUserCamInfoId(currentUser);
+        return String(comment.userCamInfoId) === String(currentUserCamInfoId);
     };
 
     const handleGoBack = () => {
@@ -265,6 +444,44 @@ export default function StudyDetailPage() {
         } catch (error) {
             console.error('스터디 삭제 실패:', error);
             alert(`스터디 삭제에 실패했습니다: ${error.message}`);
+        }
+    };
+
+    // 날짜 포맷팅
+    const formatDate = (dateString) => {
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+
+            // 1분 미만
+            if (diff < 60 * 1000) {
+                return '방금 전';
+            }
+            // 1시간 미만
+            if (diff < 60 * 60 * 1000) {
+                const minutes = Math.floor(diff / (60 * 1000));
+                return `${minutes}분 전`;
+            }
+            // 24시간 미만
+            if (diff < 24 * 60 * 60 * 1000) {
+                const hours = Math.floor(diff / (60 * 60 * 1000));
+                return `${hours}시간 전`;
+            }
+            // 7일 미만
+            if (diff < 7 * 24 * 60 * 60 * 1000) {
+                const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+                return `${days}일 전`;
+            }
+
+            // 그 외
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } catch (error) {
+            return dateString;
         }
     };
 
@@ -485,6 +702,126 @@ export default function StudyDetailPage() {
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* 댓글 섹션 */}
+                <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                    <div className="flex items-center mb-6">
+                        <MessageCircle className="w-5 h-5 mr-2" />
+                        <h3 className="text-lg font-semibold">댓글 ({comments.length})</h3>
+                    </div>
+
+                    {/* 댓글 작성 폼 */}
+                    {currentUser ? (
+                        <div className="mb-6">
+                            <div className="flex items-start space-x-3">
+                                <div className="flex-grow">
+                                    <textarea
+                                        value={commentContent}
+                                        onChange={(e) => setCommentContent(e.target.value)}
+                                        placeholder="댓글을 입력해주세요..."
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                                        rows={3}
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleSubmitComment}
+                                    disabled={submittingComment || !commentContent.trim()}
+                                    className={`px-4 py-3 rounded-lg flex items-center transition-colors ${
+                                        submittingComment || !commentContent.trim()
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                    }`}
+                                >
+                                    <Send className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mb-6 p-4 bg-gray-50 rounded-lg text-center text-gray-600">
+                            댓글을 작성하려면 로그인이 필요합니다.
+                        </div>
+                    )}
+
+                    {/* 댓글 목록 */}
+                    <div className="space-y-4">
+                        {comments.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!
+                            </div>
+                        ) : (
+                            comments.map((comment) => (
+                                <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-0">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-grow">
+                                            <div className="flex items-center mb-2">
+                                                <span className="font-medium text-gray-900">
+                                                    {comment.author?.name || comment.author?.userName || '사용자'}
+                                                </span>
+                                                {comment.author?.campusName && (
+                                                    <span className="ml-2 text-sm text-gray-500">
+                                                        ({comment.author.campusName})
+                                                    </span>
+                                                )}
+                                                <span className="ml-2 text-xs text-gray-400">
+                                                    {formatDate(comment.createdAt)}
+                                                </span>
+                                                {comment.updatedAt !== comment.createdAt && (
+                                                    <span className="ml-1 text-xs text-gray-400">(수정됨)</span>
+                                                )}
+                                            </div>
+                                            {editingCommentId === comment.id ? (
+                                                <div className="flex items-start space-x-2">
+                                                    <textarea
+                                                        value={editingContent}
+                                                        onChange={(e) => setEditingContent(e.target.value)}
+                                                        className="flex-grow px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                                                        rows={2}
+                                                    />
+                                                    <button
+                                                        onClick={() => handleUpdateComment(comment.id)}
+                                                        className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                                    >
+                                                        <Check className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingCommentId(null);
+                                                            setEditingContent('');
+                                                        }}
+                                                        className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <p className="text-gray-700">{comment.content}</p>
+                                            )}
+                                        </div>
+                                        {isCommentAuthor(comment) && editingCommentId !== comment.id && (
+                                            <div className="flex items-center space-x-2 ml-4">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingCommentId(comment.id);
+                                                        setEditingContent(comment.content);
+                                                    }}
+                                                    className="text-gray-500 hover:text-gray-700"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteComment(comment.id)}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </Layout>

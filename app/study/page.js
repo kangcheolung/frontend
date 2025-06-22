@@ -216,20 +216,6 @@ export default function StudyListPage() {
                     studyCount={filteredStudies.length}
                 />
 
-                {/* 디버그 정보 */}
-                <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
-                    <p><strong>총 스터디 수:</strong> {studies.length}</p>
-                    <p><strong>필터링된 스터디 수:</strong> {filteredStudies.length}</p>
-                    <p><strong>API URL:</strong> {serverUrl}/api/studies/list</p>
-                    <p><strong>검색 키워드:</strong> {searchKeyword || '없음'}</p>
-                    {studies.length > 0 && (
-                        <>
-                            <p><strong>첫 스터디 ID:</strong> {studies[0]?.id}</p>
-                            <p><strong>첫 스터디 제목:</strong> {studies[0]?.title}</p>
-                        </>
-                    )}
-                </div>
-
                 {/* 에러 상태 */}
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
