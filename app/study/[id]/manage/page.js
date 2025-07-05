@@ -124,7 +124,7 @@ export default function StudyManagePage() {
                 const allMembers = membersData.data || membersData.result || [];
                 const approvedMembers = allMembers.filter(member => member.memberStatus === 'APPROVED');
                 setMembers(approvedMembers);
-                console.log('✅ 승인된 멤버 수:', approvedMembers.length);
+                console.log('✅ 전체 멤버 수:', approvedMembers.length);
             }
 
         } catch (error) {
@@ -387,7 +387,7 @@ export default function StudyManagePage() {
                             >
                                 <div className="flex items-center">
                                     <Users className="w-4 h-4 mr-2" />
-                                    승인된 멤버 ({members.length})
+                                    전체 멤버 ({members.length})
                                 </div>
                             </button>
                         </nav>
@@ -407,37 +407,79 @@ export default function StudyManagePage() {
                             ) : (
                                 <div className="space-y-4">
                                     {applicants.map((member) => (
-                                        <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                            <div className="flex-grow">
-                                                <div className="flex items-center mb-2">
-                                                    <h3 className="font-medium text-gray-900">{member.userName}</h3>
-                                                    {member.userNickname && (
-                                                        <span className="ml-2 text-sm text-gray-500">({member.userNickname})</span>
-                                                    )}
+                                        <div key={member.id}
+                                             className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                            <div className="p-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-grow">
+                                                        {/* 기본 정보 */}
+                                                        <div className="flex items-center mb-3">
+                                                            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                                                                <span className="text-indigo-600 font-medium text-sm">
+                                                                    {member.userName?.charAt(0) || '?'}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="font-medium text-gray-900">{member.userName}</h3>
+                                                                {member.userNickname && (
+                                                                    <span
+                                                                        className="text-sm text-gray-500">({member.userNickname})</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 상세 정보와 신청 메시지 */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                            <div className="text-sm text-gray-600">
+                                                                <p className="flex items-center mb-1">
+                                                                    <span className="font-medium mr-2">캠퍼스:</span>
+                                                                    {member.campusName}
+                                                                </p>
+                                                                {member.majorName && (
+                                                                    <p className="flex items-center mb-1">
+                                                                        <span className="font-medium mr-2">전공:</span>
+                                                                        {member.majorName}
+                                                                    </p>
+                                                                )}
+                                                                <p className="flex items-center text-xs text-gray-500">
+                                                                    <span className="font-medium mr-2">신청일:</span>
+                                                                    {formatDate(member.createdAt)}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* 신청 메시지 */}
+                                                            {member.applyMessage && (
+                                                                <div
+                                                                    className="p-3 bg-gray-50 rounded-lg border-l-4 border-indigo-500">
+                                                                    <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                                                        💬 신청 메시지
+                                                                    </h4>
+                                                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                                                        {member.applyMessage}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 액션 버튼 */}
+                                                    <div className="flex flex-col space-y-2 ml-4">
+                                                        <button
+                                                            onClick={() => handleApproveMember(member.id, member.userName)}
+                                                            className="flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4 mr-1"/>
+                                                            승인
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectMember(member.id, member.userName)}
+                                                            className="flex items-center px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                                                        >
+                                                            <XCircle className="w-4 h-4 mr-1"/>
+                                                            거부
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="text-sm text-gray-600">
-                                                    <p>{member.campusName}</p>
-                                                    {member.majorName && <p>{member.majorName}</p>}
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        신청일: {formatDate(member.createdAt)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex space-x-2 ml-4">
-                                                <button
-                                                    onClick={() => handleApproveMember(member.id, member.userName)}
-                                                    className="flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                                                >
-                                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                                    승인
-                                                </button>
-                                                <button
-                                                    onClick={() => handleRejectMember(member.id, member.userName)}
-                                                    className="flex items-center px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-                                                >
-                                                    <XCircle className="w-4 h-4 mr-1" />
-                                                    거부
-                                                </button>
                                             </div>
                                         </div>
                                     ))}
@@ -448,10 +490,10 @@ export default function StudyManagePage() {
 
                     {activeTab === 'approved' && (
                         <div className="p-6">
-                            <h2 className="text-lg font-semibold mb-4">승인된 멤버</h2>
+                            <h2 className="text-lg font-semibold mb-4">전체 멤버</h2>
                             {members.length === 0 ? (
                                 <div className="text-center py-12 text-gray-500">
-                                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-300"/>
                                     <p>승인된 멤버가 없습니다.</p>
                                 </div>
                             ) : (
@@ -459,20 +501,24 @@ export default function StudyManagePage() {
                                     {members.map((member) => {
                                         const isCurrentUser = String(member.userCamInfoId) === String(getUserCamInfoId(currentUser));
                                         return (
-                                            <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                            <div key={member.id}
+                                                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                                 <div className="flex-grow">
                                                     <div className="flex items-center mb-2">
                                                         <h3 className="font-medium text-gray-900">{member.userName}</h3>
                                                         {member.userNickname && (
-                                                            <span className="ml-2 text-sm text-gray-500">({member.userNickname})</span>
+                                                            <span
+                                                                className="ml-2 text-sm text-gray-500">({member.userNickname})</span>
                                                         )}
                                                         {member.memberRole === 'LEADER' && (
-                                                            <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                                            <span
+                                                                className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                                                                 리더
                                                             </span>
                                                         )}
                                                         {isCurrentUser && (
-                                                            <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                                            <span
+                                                                className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                                                                 나
                                                             </span>
                                                         )}
@@ -492,7 +538,7 @@ export default function StudyManagePage() {
                                                             onClick={() => handleChangeLeader(member.id, member.userName)}
                                                             className="flex items-center px-3 py-2 border border-purple-300 text-purple-700 text-sm rounded hover:bg-purple-50 transition-colors"
                                                         >
-                                                            <Crown className="w-4 h-4 mr-1" />
+                                                            <Crown className="w-4 h-4 mr-1"/>
                                                             리더 변경
                                                         </button>
                                                     )}
@@ -504,37 +550,6 @@ export default function StudyManagePage() {
                             )}
                         </div>
                     )}
-                </div>
-
-                {/* 통계 정보 */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white p-4 rounded-lg border border-gray-100">
-                        <div className="flex items-center">
-                            <Clock className="w-5 h-5 text-yellow-500 mr-2" />
-                            <div>
-                                <p className="text-sm text-gray-600">신청 대기</p>
-                                <p className="text-2xl font-bold text-gray-900">{applicants.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg border border-gray-100">
-                        <div className="flex items-center">
-                            <Users className="w-5 h-5 text-green-500 mr-2" />
-                            <div>
-                                <p className="text-sm text-gray-600">승인된 멤버</p>
-                                <p className="text-2xl font-bold text-gray-900">{members.length}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white p-4 rounded-lg border border-gray-100">
-                        <div className="flex items-center">
-                            <Users className="w-5 h-5 text-blue-500 mr-2" />
-                            <div>
-                                <p className="text-sm text-gray-600">전체 멤버</p>
-                                <p className="text-2xl font-bold text-gray-900">{applicants.length + members.length}</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </Layout>

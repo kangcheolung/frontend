@@ -151,6 +151,7 @@ export default function MyStudiesPage() {
     };
 
     // 스터디 탈퇴
+    // 스터디 탈퇴 함수 수정
     const handleLeaveStudy = async (membershipId, studyTitle) => {
         if (!confirm(`정말로 "${studyTitle}" 스터디에서 탈퇴하시겠습니까?`)) {
             return;
@@ -158,8 +159,16 @@ export default function MyStudiesPage() {
 
         try {
             const userCamInfoId = getUserCamInfoId(currentUser);
+
+            // 현재 스터디 찾기 (studyPostId 필요)
+            const currentStudy = myStudies.find(study => study.membershipId === membershipId);
+            if (!currentStudy) {
+                throw new Error('스터디 정보를 찾을 수 없습니다.');
+            }
+
+            // 백엔드 API에 맞게 studyPostId 사용
             const response = await fetch(
-                `${serverUrl}/api/study-members/leave?studyMemberId=${membershipId}&userCamInfoId=${userCamInfoId}`,
+                `${serverUrl}/api/study-members/leave?studyPostId=${currentStudy.id}&userCamInfoId=${userCamInfoId}`,
                 {
                     method: 'POST',
                     headers: {
@@ -187,7 +196,7 @@ export default function MyStudiesPage() {
         }
     };
 
-    // 스터디 신청 취소 (대기 중인 신청 취소)
+// 스터디 신청 취소 함수도 동일하게 수정
     const handleCancelApplication = async (membershipId, studyTitle) => {
         if (!confirm(`"${studyTitle}" 스터디 신청을 취소하시겠습니까?`)) {
             return;
@@ -195,9 +204,16 @@ export default function MyStudiesPage() {
 
         try {
             const userCamInfoId = getUserCamInfoId(currentUser);
-            // 신청 취소도 leave API를 사용
+
+            // 현재 스터디 찾기 (studyPostId 필요)
+            const currentStudy = myStudies.find(study => study.membershipId === membershipId);
+            if (!currentStudy) {
+                throw new Error('스터디 정보를 찾을 수 없습니다.');
+            }
+
+            // 백엔드 API에 맞게 studyPostId 사용
             const response = await fetch(
-                `${serverUrl}/api/study-members/leave?studyMemberId=${membershipId}&userCamInfoId=${userCamInfoId}`,
+                `${serverUrl}/api/study-members/leave?studyPostId=${currentStudy.id}&userCamInfoId=${userCamInfoId}`,
                 {
                     method: 'POST',
                     headers: {

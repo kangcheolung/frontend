@@ -92,7 +92,7 @@ export default function MyPage() {
     const handleLogout = () => {
         // 로그아웃 시 캐시 삭제
         clearUserCache();
-        window.location.href = `${serverUrl}/`;
+        window.location.href = `${serverUrl}/api/users/logout`;
     };
 
     const handleUnivCert = () => {
