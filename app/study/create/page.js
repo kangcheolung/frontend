@@ -7,6 +7,8 @@ import { Layout } from '@/app/components/layout';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { getCachedUserData } from '@/app/services/userCache';
 
+export const dynamic = 'force-dynamic';
+
 export default function StudyFormPage() {
     const router = useRouter();
     const searchParams = useSearchParams();

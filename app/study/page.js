@@ -8,6 +8,8 @@ import StudySearchHeader from '@/app/components/study/StudySearchHeader';
 import StudyCard from '@/app/components/study/StudyCard';
 import { Plus, BookOpen } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function StudyListPage() {
     const searchParams = useSearchParams();
     const [studies, setStudies] = useState([]);
