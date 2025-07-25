@@ -1,7 +1,7 @@
-// app/study/create/page.js (생성/수정 통합 페이지)
+// app/study/create/page.js - Suspense 적용으로 useSearchParams 에러 해결
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Layout } from '@/app/components/layout';
 import { ArrowLeft, Save, X } from 'lucide-react';
@@ -9,7 +9,7 @@ import { getCachedUserData } from '@/app/services/userCache';
 
 export const dynamic = 'force-dynamic';
 
-export default function StudyFormPage() {
+function StudyFormContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
@@ -408,5 +408,22 @@ export default function StudyFormPage() {
                 </div>
             </div>
         </Layout>
+    );
+}
+
+export default function StudyFormPage() {
+    return (
+        <Suspense fallback={
+            <Layout requireAuth={true}>
+                <div className="max-w-4xl mx-auto px-4 py-8">
+                    <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                        <p>페이지 로딩 중...</p>
+                    </div>
+                </div>
+            </Layout>
+        }>
+            <StudyFormContent />
+        </Suspense>
     );
 }

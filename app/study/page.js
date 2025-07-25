@@ -1,7 +1,7 @@
-// app/study/page.js - API 엔드포인트 수정 버전
+// app/study/page.js - Suspense 적용으로 useSearchParams 에러 해결
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Layout } from '@/app/components/layout';
 import StudySearchHeader from '@/app/components/study/StudySearchHeader';
@@ -10,7 +10,7 @@ import { Plus, BookOpen } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-export default function StudyListPage() {
+function StudyContent() {
     const searchParams = useSearchParams();
     const [studies, setStudies] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -290,5 +290,22 @@ export default function StudyListPage() {
                 </button>
             </div>
         </Layout>
+    );
+}
+
+export default function StudyListPage() {
+    return (
+        <Suspense fallback={
+            <Layout requireAuth={false}>
+                <div className="max-w-6xl mx-auto px-4 py-8">
+                    <div className="flex justify-center items-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <span className="ml-2 text-gray-600">페이지 로딩 중...</span>
+                    </div>
+                </div>
+            </Layout>
+        }>
+            <StudyContent />
+        </Suspense>
     );
 }
