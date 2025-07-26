@@ -30,7 +30,7 @@ export default function Layout({ children, requireAuth = false }) {
 
             if (!data.result.isLoggedIn) {
                 if (requireAuth) {
-                    router.push('/');
+                    //router.push('/');
                     return;
                 }
                 setIsLoading(false);
