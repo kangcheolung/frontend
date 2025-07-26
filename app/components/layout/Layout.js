@@ -11,8 +11,7 @@ export default function Layout({ children, requireAuth = false }) {
     const [userData, setUserData] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const router = useRouter();
-    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
-
+    const serverUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || 'https://stitch-study.site';
     useEffect(() => {
         checkLoginAndLoadUserData();
     }, []);
@@ -25,12 +24,12 @@ export default function Layout({ children, requireAuth = false }) {
                 credentials: 'include'
             });
             const data = await response.json();
-
+ç
             setIsLoggedIn(data.result.isLoggedIn);
 
             if (!data.result.isLoggedIn) {
                 if (requireAuth) {
-                    //router.push('/');
+                    router.push('/');
                     return;
                 }
                 setIsLoading(false);
