@@ -28,7 +28,7 @@ export default function Home() {
             }
 
             // 캐시에 없으면 서버에 확인
-            const response = await fetch(`${serverUrl}/api/users/session`, {
+            const response = await fetch(`${serverUrl}/api/auth/session`, {
                 credentials: 'include'
             });
             const data = await response.json();
