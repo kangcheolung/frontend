@@ -9,8 +9,7 @@ export default function Home() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
-    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
-
+    const serverUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
     useEffect(() => {
         // 페이지 로드 시 로그인 상태 확인
         checkLoginStatus();
