@@ -10,24 +10,42 @@ export default function Layout({ children, requireAuth = false }) {
     const [isLoading, setIsLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [hasChecked, setHasChecked] = useState(false); // 추가: 중복 체크 방지
     const router = useRouter();
-    const serverUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_SERVER_URL || 'https://stitch-study.site';
+
+    // 서버 URL 명시적으로 설정
+    const serverUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
     useEffect(() => {
-        checkLoginAndLoadUserData();
-    }, []);
+        if (!hasChecked) { // 추가: 한 번만 체크하도록
+            checkLoginAndLoadUserData();
+        }
+    }, [hasChecked]); // 의존성 배열 수정
 
     // 로그인 체크 및 사용자 데이터 로드
     const checkLoginAndLoadUserData = async () => {
+        if (hasChecked) return; // 추가: 중복 실행 방지
+
         try {
+            setHasChecked(true); // 추가: 체크 완료 표시
+
+            console.log('Checking login status...'); // 디버깅용
+
             // 로그인 상태 확인
             const response = await fetch(`${serverUrl}/api/auth/session`, {
                 credentials: 'include'
             });
-            const data = await response.json();
-ç
-            setIsLoggedIn(data.result.isLoggedIn);
 
-            if (!data.result.isLoggedIn) {
+            if (!response.ok) {
+                throw new Error('Session check failed');
+            }
+
+            const data = await response.json();
+            console.log('Session response:', data); // 디버깅용
+
+            setIsLoggedIn(data.result?.isLoggedIn || false);
+
+            if (!data.result?.isLoggedIn) {
                 if (requireAuth) {
                     router.push('/');
                     return;
@@ -48,6 +66,8 @@ export default function Layout({ children, requireAuth = false }) {
             }
         } catch (error) {
             console.error('Failed to check login status or load user data', error);
+            setHasChecked(true); // 에러시에도 체크 완료 표시
+            setIsLoggedIn(false);
             if (requireAuth) {
                 router.push('/');
             } else {
@@ -59,6 +79,8 @@ export default function Layout({ children, requireAuth = false }) {
     // 사용자 정보 가져와서 캐싱
     const fetchAndCacheUserData = async () => {
         try {
+            console.log('Fetching user data...'); // 디버깅용
+
             const userResponse = await fetch(`${serverUrl}/api/users/me`, {
                 method: 'GET',
                 headers: {
@@ -72,6 +94,7 @@ export default function Layout({ children, requireAuth = false }) {
             }
 
             const userData = await userResponse.json();
+            console.log('User data response:', userData); // 디버깅용
 
             if (userData.code === 'SUCCESS' && userData.result) {
                 // 사용자 정보 캐시에 저장 및 상태 업데이트
