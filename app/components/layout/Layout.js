@@ -14,7 +14,7 @@ export default function Layout({ children, requireAuth = false }) {
     const router = useRouter();
 
     // 서버 URL 명시적으로 설정
-    const serverUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:8080';
 
     useEffect(() => {
         if (!hasChecked) { // 추가: 한 번만 체크하도록
