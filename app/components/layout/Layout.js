@@ -20,7 +20,7 @@ export default function Layout({ children, requireAuth = false }) {
         if (!hasChecked) { // 추가: 한 번만 체크하도록
             checkLoginAndLoadUserData();
         }
-    }, [hasChecked]); // 의존성 배열 수정
+    }, []); // 의존성 배열 수정
 
     // 로그인 체크 및 사용자 데이터 로드
     const checkLoginAndLoadUserData = async () => {
