@@ -50,19 +50,40 @@ export const NotificationBell = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // 백엔드에서 제공하는 링크 사용 (링크 생성 로직 불필요)
+    const getNotificationLink = (notification) => {
+        console.log('🔗 백엔드 제공 링크 확인:', {
+            id: notification.id,
+            type: notification.type,
+            link: notification.link,
+            message: notification.message
+        });
+
+        // 백엔드에서 이미 완성된 링크를 제공하므로 그대로 사용
+        return notification.link || null;
+    };
+
     // 알림 클릭 처리
     const handleNotificationClick = async (notification) => {
         console.log('🖱️ 알림 클릭:', notification);
 
+        // 읽음 처리
         if (!notification.isRead && markAsRead) {
             console.log('📖 읽음 처리 시작:', notification.id);
             await markAsRead(notification.id);
         }
 
-        if (notification.link) {
-            console.log('🔗 링크 이동:', notification.link);
+        // 링크 생성 및 이동
+        const targetLink = getNotificationLink(notification);
+
+        if (targetLink) {
+            console.log('🔗 링크 이동:', targetLink);
             setIsOpen(false);
-            router.push(notification.link);
+            router.push(targetLink);
+        } else {
+            console.warn('⚠️ 이동할 링크가 없습니다:', notification);
+            // 링크가 없는 경우에도 드롭다운은 닫기
+            setIsOpen(false);
         }
     };
 
@@ -191,7 +212,13 @@ export const NotificationBell = () => {
                         ) : (
                             safeNotifications.map((notification, index) => {
                                 const config = getNotificationConfig(notification.type);
-                                console.log(`🔔 알림 ${index + 1} 렌더링:`, notification);
+                                const targetLink = getNotificationLink(notification);
+
+                                console.log(`🔔 알림 ${index + 1} 렌더링:`, {
+                                    notification,
+                                    targetLink,
+                                    config
+                                });
 
                                 return (
                                     <div
@@ -199,7 +226,7 @@ export const NotificationBell = () => {
                                         onClick={() => handleNotificationClick(notification)}
                                         className={`px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors group ${
                                             !notification.isRead ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                                        }`}
+                                        } ${targetLink ? 'cursor-pointer' : 'cursor-default'}`}
                                     >
                                         <div className="flex items-start space-x-3">
                                             {/* 알림 아이콘 */}
@@ -216,13 +243,20 @@ export const NotificationBell = () => {
                                                     <span className="text-xs text-gray-500">
                                                         {formatDate(notification.createdAt)}
                                                     </span>
-                                                    {!notification.isRead && (
-                                                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                                    )}
+                                                    <div className="flex items-center space-x-2">
+                                                        {targetLink && (
+                                                            <span className="text-xs text-indigo-500">클릭하여 이동</span>
+                                                        )}
+                                                        {!notification.isRead && (
+                                                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 {/* 디버깅 정보 */}
                                                 <div className="text-xs text-gray-400 mt-1">
-                                                    ID: {notification.id} | 읽음: {notification.isRead ? 'Y' : 'N'}
+                                                    타입: {notification.type} | 읽음: {notification.isRead ? 'Y' : 'N'}
+                                                    {notification.link && <span> | 링크: {notification.link}</span>}
+                                                    {notification.targetId && <span> | 타겟ID: {notification.targetId}</span>}
                                                 </div>
                                             </div>
 
