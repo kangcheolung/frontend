@@ -13,18 +13,30 @@ export const NotificationBell = () => {
     const dropdownRef = useRef(null);
 
     const {
-        notifications = [], // 기본값 설정
-        unreadCount = 0,    // 기본값 설정
-        loading = false,    // 기본값 설정
-        isConnected = false, // 기본값 설정
+        notifications = [],
+        unreadCount = 0,
+        loading = false,
+        isConnected = false,
         markAsRead,
         markAllAsRead,
         deleteNotification
-    } = useNotification() || {}; // useNotification이 undefined일 경우 대비
+    } = useNotification() || {};
 
     // 안전한 변수들
     const safeNotifications = Array.isArray(notifications) ? notifications : [];
     const safeUnreadCount = typeof unreadCount === 'number' ? unreadCount : 0;
+
+    // 디버깅: 데이터 변경 감지
+    useEffect(() => {
+        console.log('🔔 NotificationBell 데이터 업데이트:', {
+            notifications: safeNotifications.length,
+            unreadCount: safeUnreadCount,
+            loading,
+            isConnected,
+            isOpen,
+            첫번째알림: safeNotifications[0]
+        });
+    }, [safeNotifications, safeUnreadCount, loading, isConnected, isOpen]);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
@@ -40,11 +52,15 @@ export const NotificationBell = () => {
 
     // 알림 클릭 처리
     const handleNotificationClick = async (notification) => {
+        console.log('🖱️ 알림 클릭:', notification);
+
         if (!notification.isRead && markAsRead) {
+            console.log('📖 읽음 처리 시작:', notification.id);
             await markAsRead(notification.id);
         }
 
         if (notification.link) {
+            console.log('🔗 링크 이동:', notification.link);
             setIsOpen(false);
             router.push(notification.link);
         }
@@ -70,6 +86,7 @@ export const NotificationBell = () => {
                 return date.toLocaleDateString('ko-KR');
             }
         } catch (error) {
+            console.error('날짜 포맷팅 오류:', error);
             return '알 수 없음';
         }
     };
@@ -77,6 +94,8 @@ export const NotificationBell = () => {
     // 알림 개별 삭제
     const handleDelete = async (e, notificationId) => {
         e.stopPropagation();
+        console.log('🗑️ 알림 삭제 클릭:', notificationId);
+
         if (deleteNotification) {
             await deleteNotification(notificationId);
         }
@@ -84,16 +103,32 @@ export const NotificationBell = () => {
 
     // 모든 알림 읽음 처리
     const handleMarkAllAsRead = async () => {
+        console.log('📖 모든 알림 읽음 처리 클릭');
+
         if (markAllAsRead) {
             await markAllAsRead();
         }
     };
 
+    // 드롭다운 열기/닫기
+    const handleToggleDropdown = () => {
+        console.log('🔽 드롭다운 토글:', { 현재상태: isOpen, 새상태: !isOpen });
+        setIsOpen(!isOpen);
+    };
+
+    console.log('🎨 NotificationBell 렌더링:', {
+        safeNotifications: safeNotifications.length,
+        safeUnreadCount,
+        loading,
+        isConnected,
+        isOpen
+    });
+
     return (
         <div className="relative" ref={dropdownRef}>
             {/* 알림 벨 버튼 */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggleDropdown}
                 className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
             >
                 <Bell className="w-6 h-6" />
@@ -116,7 +151,9 @@ export const NotificationBell = () => {
                 <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden">
                     {/* 헤더 */}
                     <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
-                        <h3 className="text-lg font-semibold text-gray-900">알림</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            알림 ({safeNotifications.length})
+                        </h3>
                         <div className="flex items-center space-x-2">
                             {safeUnreadCount > 0 && (
                                 <button
@@ -124,7 +161,7 @@ export const NotificationBell = () => {
                                     className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center"
                                 >
                                     <CheckCheck className="w-4 h-4 mr-1" />
-                                    모두 읽음
+                                    모두 읽음 ({safeUnreadCount})
                                 </button>
                             )}
                             <button
@@ -147,10 +184,14 @@ export const NotificationBell = () => {
                             <div className="p-6 text-center">
                                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                                 <p className="text-gray-500 text-sm">새로운 알림이 없습니다</p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    연결상태: {isConnected ? '연결됨' : '연결안됨'}
+                                </p>
                             </div>
                         ) : (
-                            safeNotifications.map((notification) => {
+                            safeNotifications.map((notification, index) => {
                                 const config = getNotificationConfig(notification.type);
+                                console.log(`🔔 알림 ${index + 1} 렌더링:`, notification);
 
                                 return (
                                     <div
@@ -162,8 +203,7 @@ export const NotificationBell = () => {
                                     >
                                         <div className="flex items-start space-x-3">
                                             {/* 알림 아이콘 */}
-                                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm`}
-                                                 style={{ backgroundColor: `var(--${config.color}-100, #f3f4f6)` }}>
+                                            <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm bg-gray-100">
                                                 {config.icon}
                                             </div>
 
@@ -179,6 +219,10 @@ export const NotificationBell = () => {
                                                     {!notification.isRead && (
                                                         <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                                                     )}
+                                                </div>
+                                                {/* 디버깅 정보 */}
+                                                <div className="text-xs text-gray-400 mt-1">
+                                                    ID: {notification.id} | 읽음: {notification.isRead ? 'Y' : 'N'}
                                                 </div>
                                             </div>
 
@@ -202,6 +246,7 @@ export const NotificationBell = () => {
                         <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
                             <button
                                 onClick={() => {
+                                    console.log('📄 모든 알림 보기 클릭');
                                     setIsOpen(false);
                                     router.push('/notifications');
                                 }}
