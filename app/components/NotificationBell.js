@@ -126,7 +126,7 @@ export const NotificationBell = () => {
                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
                                 <p className="text-sm text-gray-500 mt-2">로딩 중...</p>
                             </div>
-                        ) : notifications.length === 0 ? (
+                        ) : !notifications || notifications.length === 0 ? (
                             <div className="p-6 text-center">
                                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                                 <p className="text-gray-500 text-sm">새로운 알림이 없습니다</p>
