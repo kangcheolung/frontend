@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import { NotificationBell } from '../NotificationBell';
 
 export default function Header({ userData, isLoading }) {
     return (
@@ -42,7 +43,10 @@ export default function Header({ userData, isLoading }) {
                         </>
                     )}
 
-                    <div className="flex items-center">
+                    <div className="flex items-center space-x-4">
+                        {/* 알림 벨 - 로그인된 사용자에게만 표시 */}
+                        {userData && !isLoading && <NotificationBell />}
+
                         {isLoading ? (
                             <div className="animate-pulse flex items-center">
                                 <div className="h-4 bg-gray-300 rounded w-20 mr-4"></div>

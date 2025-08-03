@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Layout } from '@/app/components/layout';
 import { getCachedUserData } from '@/app/services/userCache';
+import { notificationService } from '@/app/services/notificationService';
 import { ArrowLeft, Users, Clock, CheckCircle, XCircle, Crown } from 'lucide-react';
 
 export default function StudyManagePage() {
@@ -162,6 +163,15 @@ export default function StudyManagePage() {
             const data = await response.json();
 
             if (data.code === 'SUCCESS') {
+                // 🔔 승인 알림 생성 추가
+                try {
+                    await notificationService.createStudyApproveNotification(studyMemberId);
+                    console.log('✅ 승인 알림 생성 완료');
+                } catch (notificationError) {
+                    console.error('⚠️ 승인 알림 생성 실패:', notificationError);
+                    // 알림 생성 실패해도 메인 기능은 계속 진행
+                }
+
                 alert(`${memberName}님이 승인되었습니다.`);
                 await fetchStudyData(currentUser);
             } else {
@@ -200,6 +210,15 @@ export default function StudyManagePage() {
             const data = await response.json();
 
             if (data.code === 'SUCCESS') {
+                // 🔔 거부 알림 생성 추가
+                try {
+                    await notificationService.createStudyRejectNotification(studyMemberId);
+                    console.log('✅ 거부 알림 생성 완료');
+                } catch (notificationError) {
+                    console.error('⚠️ 거부 알림 생성 실패:', notificationError);
+                    // 알림 생성 실패해도 메인 기능은 계속 진행
+                }
+
                 alert(`${memberName}님의 신청이 거부되었습니다.`);
                 await fetchStudyData(currentUser);
             } else {

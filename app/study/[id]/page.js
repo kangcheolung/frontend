@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Layout } from '@/app/components/layout';
 import { getCachedUserData } from '@/app/services/userCache';
+import { notificationService } from '@/app/services/notificationService';
 import { MessageCircle, Edit2, Trash2, Send, X, Check } from 'lucide-react';
 
 export default function StudyDetailPage() {
@@ -179,6 +180,19 @@ export default function StudyDetailPage() {
             const data = await response.json();
 
             if (data.code === 'SUCCESS') {
+                // 🔔 댓글 알림 생성 추가
+                try {
+                    // 응답에서 생성된 댓글 ID 가져오기
+                    const commentId = data.data?.id || data.result?.id;
+                    if (commentId) {
+                        await notificationService.createCommentNotification(commentId);
+                        console.log('✅ 댓글 알림 생성 완료');
+                    }
+                } catch (notificationError) {
+                    console.error('⚠️ 댓글 알림 생성 실패:', notificationError);
+                    // 알림 생성 실패해도 메인 기능은 계속 진행
+                }
+
                 setCommentContent('');
                 fetchComments(); // 댓글 목록 새로고침
             } else {
@@ -392,6 +406,21 @@ export default function StudyDetailPage() {
             console.log('스터디 신청 응답:', data);
 
             if (data.code === 'SUCCESS') {
+                // 🔔 스터디 신청 알림 생성 추가
+                try {
+                    // 스터디 작성자에게 알림 전송
+                    const studyCreatorId = study.author?.userCamInfoId || study.author?.id || study.userCamInfoId;
+                    const studyMemberId = data.data?.id || data.result?.id; // 생성된 StudyMember ID
+
+                    if (studyCreatorId && studyMemberId) {
+                        await notificationService.createStudyApplyNotification(studyCreatorId, studyMemberId);
+                        console.log('✅ 스터디 신청 알림 생성 완료');
+                    }
+                } catch (notificationError) {
+                    console.error('⚠️ 스터디 신청 알림 생성 실패:', notificationError);
+                    // 알림 생성 실패해도 메인 기능은 계속 진행
+                }
+
                 alert('스터디 신청이 완료되었습니다!\n스터디 리더의 승인을 기다려주세요.');
                 // 페이지 새로고침으로 상태 업데이트
                 await fetchStudyDetail(currentUser);
