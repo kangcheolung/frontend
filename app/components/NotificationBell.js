@@ -13,14 +13,18 @@ export const NotificationBell = () => {
     const dropdownRef = useRef(null);
 
     const {
-        notifications,
-        unreadCount,
-        loading,
-        isConnected,
+        notifications = [], // 기본값 설정
+        unreadCount = 0,    // 기본값 설정
+        loading = false,    // 기본값 설정
+        isConnected = false, // 기본값 설정
         markAsRead,
         markAllAsRead,
         deleteNotification
-    } = useNotification();
+    } = useNotification() || {}; // useNotification이 undefined일 경우 대비
+
+    // 안전한 변수들
+    const safeNotifications = Array.isArray(notifications) ? notifications : [];
+    const safeUnreadCount = typeof unreadCount === 'number' ? unreadCount : 0;
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
@@ -36,7 +40,7 @@ export const NotificationBell = () => {
 
     // 알림 클릭 처리
     const handleNotificationClick = async (notification) => {
-        if (!notification.isRead) {
+        if (!notification.isRead && markAsRead) {
             await markAsRead(notification.id);
         }
 
@@ -48,28 +52,41 @@ export const NotificationBell = () => {
 
     // 날짜 포맷팅
     const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInMs = now - date;
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-        const diffInDays = Math.floor(diffInHours / 24);
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInMs = now - date;
+            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+            const diffInDays = Math.floor(diffInHours / 24);
 
-        if (diffInHours < 1) {
-            const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-            return diffInMinutes < 1 ? '방금 전' : `${diffInMinutes}분 전`;
-        } else if (diffInHours < 24) {
-            return `${diffInHours}시간 전`;
-        } else if (diffInDays < 7) {
-            return `${diffInDays}일 전`;
-        } else {
-            return date.toLocaleDateString('ko-KR');
+            if (diffInHours < 1) {
+                const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+                return diffInMinutes < 1 ? '방금 전' : `${diffInMinutes}분 전`;
+            } else if (diffInHours < 24) {
+                return `${diffInHours}시간 전`;
+            } else if (diffInDays < 7) {
+                return `${diffInDays}일 전`;
+            } else {
+                return date.toLocaleDateString('ko-KR');
+            }
+        } catch (error) {
+            return '알 수 없음';
         }
     };
 
     // 알림 개별 삭제
     const handleDelete = async (e, notificationId) => {
         e.stopPropagation();
-        await deleteNotification(notificationId);
+        if (deleteNotification) {
+            await deleteNotification(notificationId);
+        }
+    };
+
+    // 모든 알림 읽음 처리
+    const handleMarkAllAsRead = async () => {
+        if (markAllAsRead) {
+            await markAllAsRead();
+        }
     };
 
     return (
@@ -82,9 +99,9 @@ export const NotificationBell = () => {
                 <Bell className="w-6 h-6" />
 
                 {/* 읽지 않은 알림 개수 배지 */}
-                {unreadCount > 0 && (
+                {safeUnreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                        {safeUnreadCount > 99 ? '99+' : safeUnreadCount}
                     </span>
                 )}
 
@@ -101,9 +118,9 @@ export const NotificationBell = () => {
                     <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
                         <h3 className="text-lg font-semibold text-gray-900">알림</h3>
                         <div className="flex items-center space-x-2">
-                            {unreadCount > 0 && (
+                            {safeUnreadCount > 0 && (
                                 <button
-                                    onClick={markAllAsRead}
+                                    onClick={handleMarkAllAsRead}
                                     className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center"
                                 >
                                     <CheckCheck className="w-4 h-4 mr-1" />
@@ -126,26 +143,27 @@ export const NotificationBell = () => {
                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
                                 <p className="text-sm text-gray-500 mt-2">로딩 중...</p>
                             </div>
-                        ) : !notifications || notifications.length === 0 ? (
+                        ) : safeNotifications.length === 0 ? (
                             <div className="p-6 text-center">
                                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                                 <p className="text-gray-500 text-sm">새로운 알림이 없습니다</p>
                             </div>
                         ) : (
-                            notifications.map((notification) => {
+                            safeNotifications.map((notification) => {
                                 const config = getNotificationConfig(notification.type);
 
                                 return (
                                     <div
                                         key={notification.id}
                                         onClick={() => handleNotificationClick(notification)}
-                                        className={`px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                                        className={`px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors group ${
                                             !notification.isRead ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                                         }`}
                                     >
                                         <div className="flex items-start space-x-3">
                                             {/* 알림 아이콘 */}
-                                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm bg-${config.color}-100`}>
+                                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm`}
+                                                 style={{ backgroundColor: `var(--${config.color}-100, #f3f4f6)` }}>
                                                 {config.icon}
                                             </div>
 
@@ -180,7 +198,7 @@ export const NotificationBell = () => {
                     </div>
 
                     {/* 하단 */}
-                    {notifications.length > 0 && (
+                    {safeNotifications.length > 0 && (
                         <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
                             <button
                                 onClick={() => {
