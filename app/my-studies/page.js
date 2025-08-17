@@ -252,7 +252,7 @@ export default function MyStudiesPage() {
             const response = await fetch(
                 `${serverUrl}/api/studies/delete?studyPostId=${studyId}&userCamInfoId=${userCamInfoId}`,
                 {
-                    method: 'DELETE',
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
